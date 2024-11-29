@@ -60,7 +60,7 @@ jobs:
           context: .
           file: docker/trilinos_develop/Dockerfile
           build-args: |
-            TRILINOS_VERSION="develop"
+            TRILINOS_VERSION=develop
           push: true
           tags: ${{ env.IMAGE_NAME }}:develop
           # tags: ${{ steps.meta.outputs.tags }}
