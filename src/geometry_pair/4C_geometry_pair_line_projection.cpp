@@ -548,6 +548,7 @@ namespace GEOMETRYPAIR
   initialize_template_volume_gauss_point(double, t_hermite, t_tet4);
   initialize_template_volume_gauss_point(double, t_hermite, t_tet10);
   initialize_template_volume_gauss_point(double, t_hermite, t_nurbs27);
+  initialize_template_volume_gauss_point(double, t_hermite, t_wedge6);
 
   // Define line-to-volume segmentation pairs.
 #define initialize_template_volume_segmentation(a, b, c) \
@@ -559,6 +560,7 @@ namespace GEOMETRYPAIR
   initialize_template_volume_segmentation(double, t_hermite, t_tet4);
   initialize_template_volume_segmentation(double, t_hermite, t_tet10);
   initialize_template_volume_segmentation(double, t_hermite, t_nurbs27);
+  initialize_template_volume_segmentation(double, t_hermite, t_wedge6);
 
   // Helper types for the macro initialization. The compiler has troubles inserting the templated
   // typenames into the macros.
