@@ -685,6 +685,7 @@ namespace CONSTRAINTS::EMBEDDEDMESH
 
   template class SurfaceToBackgroundCouplingPairMortar<t_quad4, t_hex8, t_quad4>;
   template class SurfaceToBackgroundCouplingPairMortar<t_nurbs9, t_hex8, t_nurbs9>;
+  template class SurfaceToBackgroundCouplingPairMortar<t_nurbs9, t_wedge6, t_nurbs9>;
   template class SurfaceToBackgroundCouplingPairMortar<t_quad4, t_nurbs27, t_quad4>;
   template class SurfaceToBackgroundCouplingPairMortar<t_nurbs9, t_nurbs27, t_nurbs9>;
 

@@ -141,6 +141,13 @@ std::shared_ptr<CONSTRAINTS::EMBEDDEDMESH::SolidInteractionPair> coupling_pair_m
               interfaceele_real, background_ele, params_ptr, cutwizard_ptr, boundary_cells);
           break;
         }
+        case Core::FE::CellType::wedge6:
+        {
+          return std::make_shared<CONSTRAINTS::EMBEDDEDMESH::SurfaceToBackgroundCouplingPairMortar<
+              GEOMETRYPAIR::t_nurbs9, GEOMETRYPAIR::t_wedge6, GEOMETRYPAIR::t_nurbs9>>(
+              interfaceele_real, background_ele, params_ptr, cutwizard_ptr, boundary_cells);
+          break;
+        }
         default:
           FOUR_C_THROW(
               "The interaction pairs with background element of type %s not yet implemented",
@@ -515,6 +522,7 @@ namespace CONSTRAINTS::EMBEDDEDMESH
   initialize_template_assemble_local_mortar_contributions(t_nurbs9, t_hex8, t_nurbs9);
   initialize_template_assemble_local_mortar_contributions(t_quad4, t_nurbs27, t_quad4);
   initialize_template_assemble_local_mortar_contributions(t_nurbs9, t_nurbs27, t_nurbs9);
+  initialize_template_assemble_local_mortar_contributions(t_nurbs9, t_wedge6, t_nurbs9);
 
 }  // namespace CONSTRAINTS::EMBEDDEDMESH
 
