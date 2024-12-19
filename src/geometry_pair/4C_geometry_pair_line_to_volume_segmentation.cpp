@@ -69,5 +69,7 @@ template class GEOMETRYPAIR::GeometryPairLineToVolumeSegmentation<double, GEOMET
     GEOMETRYPAIR::t_tet10>;
 template class GEOMETRYPAIR::GeometryPairLineToVolumeSegmentation<double, GEOMETRYPAIR::t_hermite,
     GEOMETRYPAIR::t_nurbs27>;
+template class GEOMETRYPAIR::GeometryPairLineToVolumeSegmentation<double, GEOMETRYPAIR::t_hermite,
+    GEOMETRYPAIR::t_wedge6>;
 
 FOUR_C_NAMESPACE_CLOSE

@@ -356,6 +356,13 @@ namespace GEOMETRYPAIR
           xi(0) + xi(1) + xi(2) < 1.0 + Constants::projection_xi_eta_tol)
         return true;
     }
+    else if (ElementType::geometry_type_ == DiscretizationTypeGeometry::wedge)
+    {
+      if (xi(0) > -Constants::projection_xi_eta_tol && xi(0) < xi_limit &&
+          xi(1) > -Constants::projection_xi_eta_tol && xi(1) < xi_limit - xi(0) &&
+          fabs(xi(2)) < xi_limit)
+        return true;
+    }
     else
     {
       FOUR_C_THROW("Wrong DiscretizationTypeGeometry given!");

@@ -41,7 +41,8 @@ namespace GEOMETRYPAIR
     //! hexahedron
     hexahedron,
     //! tetraeder
-    tetraeder
+    tetraeder,
+    wedge
   };
 
   /**
@@ -135,6 +136,12 @@ namespace GEOMETRYPAIR
     static constexpr GEOMETRYPAIR::DiscretizationTypeGeometry geometry_type_ =
         GEOMETRYPAIR::DiscretizationTypeGeometry::hexahedron;
   };
+  template <>
+  struct ElementDiscretizationToGeometryType<Core::FE::CellType::wedge6>
+  {
+    static constexpr GEOMETRYPAIR::DiscretizationTypeGeometry geometry_type_ =
+        GEOMETRYPAIR::DiscretizationTypeGeometry::wedge;
+  };
 
   /**
    * \brief Base class for the geometry pair element type.
@@ -200,6 +207,7 @@ namespace GEOMETRYPAIR
   using t_tet4 = ElementDiscretizationBase<Core::FE::CellType::tet4, 1>;
   using t_tet10 = ElementDiscretizationBase<Core::FE::CellType::tet10, 1>;
   using t_nurbs27 = ElementDiscretizationBase<Core::FE::CellType::nurbs27, 1>;
+  using t_wedge6 = ElementDiscretizationBase<Core::FE::CellType::wedge6, 1>;
 
 
   /**
@@ -261,6 +269,12 @@ namespace GEOMETRYPAIR
 
   template <>
   struct IsLagrangeElement<t_tet10>
+  {
+    static const bool value_ = true;
+  };
+
+  template <>
+  struct IsLagrangeElement<t_wedge6>
   {
     static const bool value_ = true;
   };
