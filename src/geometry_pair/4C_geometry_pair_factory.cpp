@@ -84,6 +84,10 @@ template std::shared_ptr<GEOMETRYPAIR::GeometryPair>
 GEOMETRYPAIR::geometry_pair_line_to_volume_factory<double, GEOMETRYPAIR::t_hermite,
     GEOMETRYPAIR::t_nurbs27>(const Core::Elements::Element*, const Core::Elements::Element*,
     const std::shared_ptr<GeometryEvaluationDataBase>&);
+template std::shared_ptr<GEOMETRYPAIR::GeometryPair>
+GEOMETRYPAIR::geometry_pair_line_to_volume_factory<double, GEOMETRYPAIR::t_hermite,
+    GEOMETRYPAIR::t_wedge6>(const Core::Elements::Element*, const Core::Elements::Element*,
+    const std::shared_ptr<GeometryEvaluationDataBase>&);
 
 
 /**
