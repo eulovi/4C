@@ -28,7 +28,9 @@ namespace Solid
     beam_to_beam_link_internal_energy,    ///< internal energy of beam to beam links
     beam_to_beam_link_kinetic_energy,     ///< kinetic energy of beam to beam links
     beam_to_sphere_link_internal_energy,  ///< internal energy of beam to sphere links
-    beam_to_sphere_link_kinetic_energy    ///< kinetic energy of beam to shpere links
+    beam_to_sphere_link_kinetic_energy,   ///< kinetic energy of beam to shpere links
+    embedded_mesh_penalty_potential       ///< internal energy of penalty potential in embedded-mesh
+                                          ///< mortar method
   };
 
   //! Map energy type to std::string
@@ -52,6 +54,8 @@ namespace Solid
         return "beam_to_sphere_link_internal_energy";
       case beam_to_sphere_link_kinetic_energy:
         return "beam_to_sphere_link_kinetic_energy";
+      case embedded_mesh_penalty_potential:
+        return "embedded_mesh_penalty_potential";
       default:
         return "unknown_type_of_energy";
     }
@@ -77,6 +81,8 @@ namespace Solid
       return beam_to_sphere_link_internal_energy;
     else if (type == "beam_to_sphere_link_kinetic_energy")
       return beam_to_sphere_link_kinetic_energy;
+    else if (type == "embedded_mesh_penalty_potential")
+      return embedded_mesh_penalty_potential;
     else
       FOUR_C_THROW("Unknown type of energy %s", type.c_str());
     exit(EXIT_FAILURE);
