@@ -57,6 +57,7 @@ namespace CONSTRAINTS::SUBMODELEVALUATOR
     //! derived
     void runtime_output_step_state(std::pair<double, int> output_time_and_step) override;
 
+    [[nodiscard]] std::map<Solid::EnergyType, double> get_energy() const override;
     //@}
 
    private:
