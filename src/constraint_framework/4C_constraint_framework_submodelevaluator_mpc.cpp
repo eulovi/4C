@@ -838,6 +838,11 @@ void CONSTRAINTS::SUBMODELEVALUATOR::RveMultiPointConstraintManager::reset() {}
 /*----------------------------------------------------------------------------*
  *----------------------------------------------------------------------------*/
 
+std::map<Solid::EnergyType, double>
+CONSTRAINTS::SUBMODELEVALUATOR::RveMultiPointConstraintManager::get_energy() const
+{
+  FOUR_C_THROW("This function is not implemented for the RveMultiPointConstraintManager.");
+}
 
 /*----------------------------------------------------------------------------*
  *----------------------------------------------------------------------------*/
