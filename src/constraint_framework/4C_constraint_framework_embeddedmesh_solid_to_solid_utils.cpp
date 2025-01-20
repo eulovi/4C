@@ -141,6 +141,13 @@ std::shared_ptr<CONSTRAINTS::EMBEDDEDMESH::SolidInteractionPair> coupling_pair_m
               interfaceele_real, background_ele, params_ptr, cutwizard_ptr, boundary_cells);
           break;
         }
+        case Core::FE::CellType::hex27:
+        {
+          return std::make_shared<CONSTRAINTS::EMBEDDEDMESH::SurfaceToBackgroundCouplingPairMortar<
+              GEOMETRYPAIR::t_nurbs9, GEOMETRYPAIR::t_hex27, GEOMETRYPAIR::t_nurbs9>>(
+              interfaceele_real, background_ele, params_ptr, cutwizard_ptr, boundary_cells);
+          break;
+        }
         case Core::FE::CellType::wedge6:
         {
           return std::make_shared<CONSTRAINTS::EMBEDDEDMESH::SurfaceToBackgroundCouplingPairMortar<
@@ -176,44 +183,42 @@ CONSTRAINTS::EMBEDDEDMESH::get_information_background_and_interface_elements(
   // Perform checks before building the coupling pairs
   cutwizard->check_if_mesh_intersection_and_cut();
 
-  // Get the mesh that represents the background mesh
-  Cut::Mesh background_mesh = (cutwizard->get_intersection())->normal_mesh();
-
-  // Get the elements inside the background mesh
-  const std::map<int, std::shared_ptr<Cut::Element>>& background_elements =
-      background_mesh.get_mesh_elements();
-
-  // Do a loop to check all the elements of the background mesh, if the element is cut, then
+  // Do a loop to check the column elements in this processor. If the element is cut, then
   // create the coupling pair
-  for (auto background_ele_iter = background_elements.begin();
-       background_ele_iter != background_elements.end(); background_ele_iter++)
+  for (int i_ele = 0; i_ele < discret.element_col_map()->NumMyElements(); i_ele++)
   {
-    const std::shared_ptr<Cut::Element> background_element = background_ele_iter->second;
+    Core::Elements::Element* element = discret.l_col_element(i_ele);
+    Cut::ElementHandle* ele_handler = cutwizard->get_element(element);
 
-    if (background_element->is_cut())
+    // If the element handle of this element is a null pointer, it means that this is not a
+    // background element, therefore, continue to the next element
+    if (ele_handler == nullptr) continue;
+
+    // Check in the element handler of this background element if it is cut
+    if (ele_handler->is_cut())
     {
-      // Get the element of the background mesh
-      auto background_ele = discret.g_element(background_element->id());
-
       // Add this element into the vector of column cut elements
-      ids_cut_elements.insert(background_element->id());
+      ids_cut_elements.insert(element->id());
 
       // Add this element into the vector of cut elements if it hasn't been stored yet
       bool is_cut_ele_included =
-          std::find(cut_elements_col_vector.begin(), cut_elements_col_vector.end(),
-              background_ele) != cut_elements_col_vector.end();
-      if (!is_cut_ele_included) cut_elements_col_vector.push_back(background_ele);
+          std::find(cut_elements_col_vector.begin(), cut_elements_col_vector.end(), element) !=
+          cut_elements_col_vector.end();
+      if (!is_cut_ele_included) cut_elements_col_vector.push_back(element);
 
       // Check if the background element is owned by this processor, if this is not the case,
       // continue with the next element.
-      if (background_ele->owner() != Core::Communication::my_mpi_rank(discret.get_comm())) continue;
+      if (element->owner() != Core::Communication::my_mpi_rank(discret.get_comm())) continue;
 
       // Create a multimap of the global ids of interface elements and their corresponding
       // boundary cells for this background element
       std::set<int> unique_interface_ele_global_ids;
       std::multimap<int, Cut::BoundaryCell*> boundarycells_ids_multimap;
 
-      for (auto volume_cell : background_element->volume_cells())
+      Cut::plain_volumecell_set volume_cells;
+      ele_handler->get_volume_cells(volume_cells);
+
+      for (auto volume_cell : volume_cells)
       {
         // Check if the position of the volume cell is in the outside direction of the
         // cutting interface. As the boundary cells are the same for the inside and outside
@@ -237,7 +242,7 @@ CONSTRAINTS::EMBEDDEDMESH::get_information_background_and_interface_elements(
 
       // Save the obtained background and interface information
       BackgroundInterfaceInfo background_interface_info;
-      background_interface_info.background_element_ptr = background_ele;
+      background_interface_info.background_element_ptr = element;
       background_interface_info.interface_element_global_ids = unique_interface_ele_global_ids;
       background_interface_info.interface_ele_to_boundarycells = boundarycells_ids_multimap;
 
@@ -519,10 +524,11 @@ namespace CONSTRAINTS::EMBEDDEDMESH
       const Core::LinAlg::Matrix<Mortar::n_dof_, 1, double>& local_constraint);
 
   initialize_template_assemble_local_mortar_contributions(t_quad4, t_hex8, t_quad4);
-  initialize_template_assemble_local_mortar_contributions(t_nurbs9, t_hex8, t_nurbs9);
   initialize_template_assemble_local_mortar_contributions(t_quad4, t_nurbs27, t_quad4);
-  initialize_template_assemble_local_mortar_contributions(t_nurbs9, t_nurbs27, t_nurbs9);
+  initialize_template_assemble_local_mortar_contributions(t_nurbs9, t_hex8, t_nurbs9);
+  initialize_template_assemble_local_mortar_contributions(t_nurbs9, t_hex27, t_nurbs9);
   initialize_template_assemble_local_mortar_contributions(t_nurbs9, t_wedge6, t_nurbs9);
+  initialize_template_assemble_local_mortar_contributions(t_nurbs9, t_nurbs27, t_nurbs9);
 
 }  // namespace CONSTRAINTS::EMBEDDEDMESH
 
