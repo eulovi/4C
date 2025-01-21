@@ -516,11 +516,11 @@ bool Cut::ElementHandle::get_cell_sets_dof_sets_gauss_points(
 /*----------------------------------------------------------------------------*
  *----------------------------------------------------------------------------*/
 bool Cut::ElementHandle::get_gauss_rule_integration_cells(
-    std::vector<Core::FE::GaussIntegration>& intpoints_vec, bool integrate_inside_volumecells)
+    std::vector<std::vector<Core::FE::GaussIntegration>>& intpoints_sets,
+    bool integrate_inside_volumecells)
 {
   // Get the volume cells for this background element
-  plain_volumecell_set cell_sets;
-  get_volume_cells(cell_sets);
+  std::vector<plain_volumecell_set> cell_sets;
 
   // Check if this element is a whole element, e.g. it was not cut
   if (!is_intersected())
@@ -532,30 +532,31 @@ bool Cut::ElementHandle::get_gauss_rule_integration_cells(
       FOUR_C_THROW(
           "Number of cell_sets for a non-intersected element is invalid: %i", cell_sets.size());
   }
-  // if the element is cut, then check how many volume sets it has. Here, we assume
-  // that there is only one cut interface and the element should be cut by two, there should
-  // be only two volume cells, one representing the inside and the outside sides
-  FOUR_C_ASSERT_ALWAYS(cell_sets.size() == 2,
-      "We expect exactly two volume cells for this element, but %i where found.", cell_sets.size());
 
-  // Now, erase the volume cells that should not be integrated depending on
-  // integrate_inside_volumecells
   if (integrate_inside_volumecells)
   {
-    cell_sets.erase(std::remove_if(cell_sets.begin(), cell_sets.end(),
-                        [](VolumeCell* volcell) { return volcell->position() == Point::outside; }),
-        cell_sets.end());
+    const std::vector<plain_volumecell_set>& ele_vc_sets_inside = get_vc_sets_inside();
+    std::copy(ele_vc_sets_inside.begin(), ele_vc_sets_inside.end(),
+        std::inserter(cell_sets, cell_sets.end()));
   }
   else
   {
-    cell_sets.erase(std::remove_if(cell_sets.begin(), cell_sets.end(),
-                        [](VolumeCell* volcell) { return volcell->position() == Point::inside; }),
-        cell_sets.end());
+    const std::vector<plain_volumecell_set>& ele_vc_sets_outside = get_vc_sets_outside();
+    std::copy(ele_vc_sets_outside.begin(), ele_vc_sets_outside.end(),
+        std::inserter(cell_sets, cell_sets.end()));
   }
 
   // At this point, the gauss points of the cells with physical meaning
   // are projected to the local space of their background element
-  volume_cell_gauss_points(cell_sets, intpoints_vec);
+  for (std::vector<plain_volumecell_set>::iterator i = cell_sets.begin(); i != cell_sets.end(); i++)
+  {
+    plain_volumecell_set& cells = *i;
+
+    std::vector<Core::FE::GaussIntegration> gaussCellsets;
+    volume_cell_gauss_points(cells, gaussCellsets);
+
+    intpoints_sets.push_back(gaussCellsets);
+  }
 
   // return true if specific integration rule available
   return true;
