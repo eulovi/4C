@@ -26,6 +26,36 @@
 
 FOUR_C_NAMESPACE_OPEN
 
+// Helper struct
+struct Entry
+{
+  Entry(double x, double y, double z, double w)
+  {
+    data[0] = x;
+    data[1] = y;
+    data[2] = z;
+    data[3] = w;
+  }
+
+  double data[4];
+
+  // Overload the == operator
+  bool operator==(const Entry& other) const
+  {
+    for (int i = 0; i < 4; ++i)
+    {
+      if (data[i] != other.data[i])
+      {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // Optionally, overload the != operator
+  bool operator!=(const Entry& other) const { return !(*this == other); }
+};
+
 /*
   Free function that prepares and performs the cut.
 */
@@ -331,14 +361,30 @@ void CONSTRAINTS::EMBEDDEDMESH::change_gauss_rule_of_cut_elements(
     Cut::ElementHandle* elementHandle = cutwizard.get_element(cut_ele);
     if (!elementHandle) FOUR_C_THROW("No element handle found for this cut element");
 
-    std::vector<Core::FE::GaussIntegration> gp_intpoints_cut;
+    // obtain the complete Gauss rule of the cut domain to integrate. As a cut element is divided by
+    // volume cells and a volume cell is divided by integration cells, what we obtain is a
+    // std::vector with len==num_volume_cells, where each entry has a std::vector with
+    // len==num_integration_cells
+    std::vector<std::vector<Core::FE::GaussIntegration>> gp_intpoints_cut;
     elementHandle->get_gauss_rule_integration_cells(
         gp_intpoints_cut, cutwizard.do_inside_cells_have_physical_meaning());
 
-    Core::FE::GaussIntegration integration_rule =
-        create_gauss_integration_from_collection(gp_intpoints_cut);
+    // now, we join all the Gauss rules to create a complete Gauss rule. We join first the
+    // integration rules of the integrations cells for each volume cell
+    std::vector<Core::FE::GaussIntegration> pre_total_integration_rule;
+    for (auto gp_intpoints : gp_intpoints_cut)
+    {
+      Core::FE::GaussIntegration temp_integration_rule =
+          create_gauss_integration_from_collection(gp_intpoints);
+      pre_total_integration_rule.push_back(temp_integration_rule);
+    }
 
-    solid_ele->set_integration_rule(integration_rule);
+    // Finally we join the volume cell Gauss rules
+    Core::FE::GaussIntegration total_integration_rule =
+        create_gauss_integration_from_collection(pre_total_integration_rule);
+
+    // Set the new integration rule in the solid element
+    solid_ele->set_integration_rule(total_integration_rule);
   }
 }
 
@@ -466,10 +512,25 @@ void CONSTRAINTS::EMBEDDEDMESH::assemble_local_mortar_contributions(
       Mortar::n_dof_, &lambda_row[0], local_kappa_active.data());
 }
 
+void addUniqueEntry(std::vector<Entry>& entries, const Entry& newEntry)
+{
+  for (const auto& entry : entries)
+  {
+    if (entry == newEntry)  // Check for duplicates
+    {
+      FOUR_C_THROW(
+          "WARNING: this Gauss point already exists. Check if the integration rule is correct.");
+    }
+  }
+
+  entries.push_back(newEntry);  // Add the new entry if it's unique
+}
 
 Core::FE::GaussIntegration CONSTRAINTS::EMBEDDEDMESH::create_gauss_integration_from_collection(
     std::vector<Core::FE::GaussIntegration>& intpoints_vector)
 {
+  std::vector<Entry> my_intpoints;
+
   // format as Core::FE::GaussIntegration
   std::shared_ptr<Core::FE::CollectedGaussPoints> gp =
       std::make_shared<Core::FE::CollectedGaussPoints>();
@@ -478,9 +539,16 @@ Core::FE::GaussIntegration CONSTRAINTS::EMBEDDEDMESH::create_gauss_integration_f
   {
     for (int i = 0; i < i_intpoints.num_points(); ++i)
     {
-      gp->append(i_intpoints.point(i)[0], i_intpoints.point(i)[1], i_intpoints.point(i)[2],
+      Entry new_entry(i_intpoints.point(i)[0], i_intpoints.point(i)[1], i_intpoints.point(i)[2],
           i_intpoints.weight(i));
+
+      addUniqueEntry(my_intpoints, new_entry);
     }
+  }
+
+  for (auto& i_intpoint : my_intpoints)
+  {
+    gp->append(i_intpoint.data[0], i_intpoint.data[1], i_intpoint.data[2], i_intpoint.data[3]);
   }
 
   return Core::FE::GaussIntegration(gp);

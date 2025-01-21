@@ -352,39 +352,50 @@ void CONSTRAINTS::EMBEDDEDMESH::SurfaceToBackgroundCouplingPairMortar<Interface,
       cut_element_integration_points_visualization_data.get_point_data<int>("integration_cell_id");
 
   // Get the gauss rule of the background cut element
-  std::vector<Core::FE::GaussIntegration> gp_intpoints_cut;
+  std::vector<std::vector<Core::FE::GaussIntegration>> gp_intpoints_cut;
 
   Cut::ElementHandle* element_handle = get_cutwizard()->get_element(&element_2());
 
   element_handle->get_gauss_rule_integration_cells(
       gp_intpoints_cut, get_cutwizard()->do_inside_cells_have_physical_meaning());
 
-  for (auto& iter : gp_intpoints_cut)
+  std::vector<Core::FE::GaussIntegration> pre_total_integration_rule;
+
+  for (auto gp_intpoints : gp_intpoints_cut)
   {
-    for (Core::FE::GaussIntegration::iterator gp = iter.begin(); gp != iter.end(); ++gp)
-    {
-      Core::LinAlg::Matrix<3, 1> gp_projected_cutelement;
+    Core::FE::GaussIntegration temp_integration_rule =
+        create_gauss_integration_from_collection(gp_intpoints);
+    pre_total_integration_rule.push_back(temp_integration_rule);
+  }
 
-      gp_projected_cutelement(0, 0) = gp.point()[0];
-      gp_projected_cutelement(1, 0) = gp.point()[1];
-      gp_projected_cutelement(2, 0) = gp.point()[2];
+  Core::FE::GaussIntegration total_integration_rule =
+      create_gauss_integration_from_collection(pre_total_integration_rule);
 
-      Core::LinAlg::Matrix<3, 1, double> point_coord(true);
+  // With the complete integration rule, iterate it and map it to the physical space
+  for (Core::FE::GaussIntegration::iterator gp = total_integration_rule.begin();
+      gp != total_integration_rule.end(); ++gp)
+  {
+    Core::LinAlg::Matrix<3, 1> gp_projected_cutelement;
 
-      map_from_parametric_to_physical_space<Background>(
-          ele2pos_, gp_projected_cutelement, this->ele2pos_.element_position_, point_coord);
+    gp_projected_cutelement(0, 0) = gp.point()[0];
+    gp_projected_cutelement(1, 0) = gp.point()[1];
+    gp_projected_cutelement(2, 0) = gp.point()[2];
 
-      // Write gauss point coordinates
-      for (int i_dim = 0; i_dim < 3; ++i_dim)
-        cutelement_point_coordinates.push_back(point_coord(i_dim));
+    Core::LinAlg::Matrix<3, 1, double> point_coord(true);
 
-      // Write the weight of the gauss point
-      cutelement_weights.push_back(gp.weight());
+    map_from_parametric_to_physical_space<Background>(
+        ele2pos_, gp_projected_cutelement, this->ele2pos_.element_position_, point_coord);
 
-      // Write an id() for this point for the background and the interface gauss points
-      int id = element_2().id();
-      cutelement_integration_cell_id.push_back(id);
-    }
+    // Write gauss point coordinates
+    for (int i_dim = 0; i_dim < 3; ++i_dim)
+      cutelement_point_coordinates.push_back(point_coord(i_dim));
+
+    // Write the weight of the gauss point
+    cutelement_weights.push_back(gp.weight());
+
+    // Write an id() for this point for the background and the interface gauss points
+    int id = element_2().id();
+    cutelement_integration_cell_id.push_back(id);
   }
 }
 
