@@ -182,7 +182,8 @@ namespace Cut
      * be integrated
      */
     virtual bool get_gauss_rule_integration_cells(
-        std::vector<Core::FE::GaussIntegration>& intpoints_vec, bool integrate_inside_volumecells);
+        std::vector<std::vector<Core::FE::GaussIntegration>>& intpoints_sets,
+        bool integrate_inside_volumecells);
 
     //! get the element's sets of volume-cells ordered by inside/outside position
     virtual void volume_cell_sets() = 0;
