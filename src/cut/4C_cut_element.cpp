@@ -406,6 +406,7 @@ void Cut::Element::find_node_positions()
         p != nullptr, "Point in element with id %i  hasn't been initialized!", this->id());
     Point::PointPosition pos = p->position();
     std::cout << "Loaded nodes" << std::endl;
+
 #ifdef check_for_all_nodes
     std::cout << "Position for node " << n->Id() << std::endl;
     // do the computation in all cases
@@ -570,12 +571,14 @@ bool Cut::Element::compute_position(Point* p, Point* cutpoint, Facet* f, Side* s
 {
   //---------------------------
   // find the element's volume-cell the cut-side and the line has to be adjacent to
+  std::cout << "Getting facet cells" << std::endl;
   const plain_volumecell_set& facet_cells = f->cells();
   plain_volumecell_set adjacent_cells;
 
   for (plain_volumecell_set::const_iterator f_cells_it = facet_cells.begin();
       f_cells_it != facet_cells.end(); f_cells_it++)
   {
+    std::cout << "----- Iterate over facet cells" << std::endl;
     if (cells_.count(*f_cells_it)) adjacent_cells.insert(*f_cells_it);  // insert this cell
   }
 
@@ -596,11 +599,13 @@ bool Cut::Element::compute_position(Point* p, Point* cutpoint, Facet* f, Side* s
   }
 
   // that's the adjacent volume-cell
+  std::cout << "Getting volume cell" << std::endl;
   VolumeCell* vc = *(adjacent_cells.begin());
 
   //---------------------------
   /* get the element's cut-sides adjacent to this cut-point and adjacent to
    * the same volume-cell */
+  std::cout << "Getting cut sides" << std::endl;
   const plain_side_set& cut_sides = this->cut_sides();
   std::vector<Side*> point_cut_sides;
 
@@ -608,6 +613,7 @@ bool Cut::Element::compute_position(Point* p, Point* cutpoint, Facet* f, Side* s
   for (plain_side_set::const_iterator side_it = cut_sides.begin(); side_it != cut_sides.end();
       side_it++)
   {
+    std::cout << "Iterate over cut sides" << std::endl;
     /* Is the cut-point a cut-point of this element's cut_side?
      * Is this side a cut-side adjacent to this volume-cell ?
      * Remove sides, if normal vector is orthogonal to side and cut-point
@@ -615,12 +621,13 @@ bool Cut::Element::compute_position(Point* p, Point* cutpoint, Facet* f, Side* s
     if (cutpoint->is_cut(*side_it) and vc->is_cut(*side_it) and
         !is_orthogonal_side(*side_it, p, cutpoint))
     {
+      std::cout << "Push back side it" << std::endl;
       // the angle-criterion has to be checked for this side
       point_cut_sides.push_back(*side_it);
     }
   }
 
-  // std::cout << "how many cut_sides found? " << point_cut_sides.size() << std::endl;
+  std::cout << "how many cut_sides found? " << point_cut_sides.size() << std::endl;
 
   if (point_cut_sides.size() == 0)
   {
@@ -643,13 +650,17 @@ bool Cut::Element::compute_position(Point* p, Point* cutpoint, Facet* f, Side* s
   /* determine the inside/outside position w.r.t the chosen cut-side
    * in case of the right side the "angle-criterion" leads to the right
    * decision (position) */
+  std::cout << "Get first point cut side" << std::endl;
   Side* cut_side = *(point_cut_sides.begin());
 
+  std::cout << "Calculate position_by_angle" << std::endl;
   const bool success = position_by_angle(p, cutpoint, cut_side);
   //------------------------------------------------------------------------
 
-  // if(success) std::cout << "set position to " << p->Position() << std::endl;
-  // else std::cout << "not successful" << std::endl;
+  if (success)
+    std::cout << "set position to " << p->position() << std::endl;
+  else
+    std::cout << "not successful" << std::endl;
 
   return success;
 }
@@ -663,7 +674,9 @@ bool Cut::Element::position_by_angle(Point* p, Point* cutpoint, Side* s)
   Core::LinAlg::Matrix<3, 1> xyz(true);
   Core::LinAlg::Matrix<3, 1> cut_point_xyz(true);
 
+  std::cout << "-----Get p coordinates" << std::endl;
   p->coordinates(xyz.data());
+  std::cout << "-----Get cutpoint coordinates" << std::endl;
   cutpoint->coordinates(cut_point_xyz.data());
 
   //------------------------------------------------------------------------
@@ -676,6 +689,7 @@ bool Cut::Element::position_by_angle(Point* p, Point* cutpoint, Side* s)
   s->normal(rs, normal);  // outward pointing normal at cut-point
 
   Core::LinAlg::Matrix<3, 1> line_vec(true);
+  std::cout << "-----Get line_vec.update" << std::endl;
   line_vec.update(
       1.0, xyz, -1.0, cut_point_xyz);  // vector representing the line between p and the cut-point
 
@@ -684,6 +698,7 @@ bool Cut::Element::position_by_angle(Point* p, Point* cutpoint, Side* s)
   double l_norm = line_vec.norm2();
   if (n_norm < MERGING_TOLERANCE or l_norm < MERGING_TOLERANCE)
   {
+    std::cout << "-----check norm against MERGING_TOLERANCE" << std::endl;
     double distance_between = Cut::distance_between_points(p, cutpoint);
     FOUR_C_THROW(
         " the norm of line_vec or n_norm is smaller than %lf, should these "
@@ -697,20 +712,23 @@ bool Cut::Element::position_by_angle(Point* p, Point* cutpoint, Side* s)
 
   if (cosine > 0.0 + 1e-3)
   {
+    std::cout << "-----set position outside" << std::endl;
     p->position(Point::outside);
-    // std::cout << " set position to outside" << std::endl;
+    std::cout << " set position to outside" << std::endl;
     return true;
   }
   else if (cosine < 0.0 - 1e-3)
   {
+    std::cout << "-----set position inside" << std::endl;
     p->position(Point::inside);
-    // std::cout << " set position to inside" << std::endl;
+    std::cout << " set position to inside" << std::endl;
     return true;
   }
   else
   {
     // Still undecided!
     // There must be another side with cosine != 0.0
+    std::cout << "-----set position undecided" << std::endl;
     return false;
   }
   //------------------------------------------------------------------------
