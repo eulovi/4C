@@ -14,7 +14,6 @@ on:
   push:
 
 env:
-  REGISTRY: ghcr.io
   # IMAGE_NAME: ghcr.io/4c-multiphysics/4c-dependencies-trilinos
   IMAGE_NAME: ghcr.io/ppraegla/4c-dependencies-trilinos
 
@@ -38,7 +37,7 @@ jobs:
       - name: Log in to the Container registry
         uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       # This step uses [docker/metadata-action](https://github.com/docker/metadata-action#about) to extract tags and labels that will be applied to the specified image. The `id` "meta" allows the output of this step to be referenced in a subsequent step. The `images` value provides the base name for the tags and labels.
@@ -62,16 +61,7 @@ jobs:
             TRILINOS_VERSION=develop
           push: true
           tags: ${{ env.IMAGE_NAME }}:develop
-          # tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-
-      # This step generates an artifact attestation for the image, which is an unforgeable statement about where and how it was built. It increases supply chain security for people who consume the image. For more information, see "[AUTOTITLE](/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds)."
-      - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@ef244123eb79f2f7a7e75d99086184180e6d0018 # v1.1.4
-        with:
-          subject-name: ${{ env.IMAGE_NAME }}
-          subject-digest: ${{ steps.push.outputs.digest }}
-          push-to-registry: true
 
   build:
     needs: build-and-push-trilinos-image
@@ -82,8 +72,12 @@ jobs:
     defaults:
       run:
         shell: bash
+    outputs:
+      test-chunks: ${{ steps.set-matrix.outputs.chunk-array }}
     steps:
       - uses: actions/checkout@v4
+      - name: Check docker hash
+        uses: ./.github/actions/compute-and-check-dependencies-hash
       - uses: ./.github/actions/build_4C
         with:
           cmake-preset: docker_assertions
@@ -94,6 +88,13 @@ jobs:
         with:
           build-directory: ${{ github.workspace }}/build
           retention-days: 1
+      - uses: ./.github/actions/chunk_test_suite
+        id: set-matrix
+        with:
+          build-directory: ${{ github.workspace }}/build
+          source-directory: ${{ github.workspace }}
+          number-of-chunks: 15
+          junit-report-artifact-name: trilinos_test_report.xml
 
   test:
     needs: build
@@ -104,13 +105,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test-chunk: ["1,315", "316,443", "444,699", "700,804", "805,965", "966,1112", "1113,1502", "1503,1652",
-          "1653,2128", "2129,2429", "2430,2580", "2581,2696", "2697,2719", "2720,2737", "2738,"]
+        test-chunk: ${{fromJson(needs.build.outputs.test-chunks)}}
     defaults:
       run:
         shell: bash
     steps:
       - uses: actions/checkout@v4
+      - name: Check docker hash
+        uses: ./.github/actions/compute-and-check-dependencies-hash
       - name: Setup developer environment for testing
         run: |
           cd $GITHUB_WORKSPACE
@@ -121,6 +123,14 @@ jobs:
       - name: Test
         run: |
           cd $GITHUB_WORKSPACE/build
-          ctest -I $TEST_CHUNK -j `nproc` --output-on-failure
+          ctest -I $TEST_CHUNK -j `nproc` --output-on-failure --output-junit $GITHUB_WORKSPACE/trilinos_test_report-$TEST_CHUNK.xml
         env:
           TEST_CHUNK: ${{ matrix.test-chunk }}
+      - name: Upload test report
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trilinos_test_report-${{ matrix.test-chunk }}.xml
+          path: |
+            ${{ github.workspace }}/trilinos_test_report-${{ matrix.test-chunk }}.xml
+          retention-days: 1
