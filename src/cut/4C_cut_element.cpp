@@ -658,7 +658,7 @@ bool Cut::Element::compute_position(Point* p, Point* cutpoint, Facet* f, Side* s
   //------------------------------------------------------------------------
 
   if (success)
-    std::cout << "set position to " << p->Position() << std::endl;
+    std::cout << "set position to " << p->position() << std::endl;
   else
     std::cout << "not successful" << std::endl;
 
