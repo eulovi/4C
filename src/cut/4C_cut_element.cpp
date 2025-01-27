@@ -381,6 +381,7 @@ void Cut::Element::make_facets(Mesh& mesh)
  *------------------------------------------------------------------------------------------*/
 void Cut::Element::find_node_positions()
 {
+  std::cout << "start find_node_positions" << std::endl;
   // DEBUG flag for FindNodePositions
   // compute positions for nodes again, also if already set by other nodes, facets, vcs (safety
   // check)
@@ -396,10 +397,15 @@ void Cut::Element::find_node_positions()
   // determine positions for all the element's nodes
   for (std::vector<Node*>::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
   {
+    std::cout << "Checking nodes" << std::endl;
+    FOUR_C_ASSERT(
+        *i != nullptr, "Node in element with id %i  hasn't been initialized!", this->id());
     Node* n = *i;
     Point* p = n->point();
+    FOUR_C_ASSERT(
+        p != nullptr, "Point in element with id %i  hasn't been initialized!", this->id());
     Point::PointPosition pos = p->position();
-
+    std::cout << "Loaded nodes" << std::endl;
 #ifdef check_for_all_nodes
     std::cout << "Position for node " << n->Id() << std::endl;
     // do the computation in all cases
@@ -414,8 +420,11 @@ void Cut::Element::find_node_positions()
       // be on cut surface for a least one cut-side
 
       // check if the node lies on a cut-surface
+      std::cout << " Checking sides" << std::endl;
       for (plain_side_set::const_iterator i = cut_faces_.begin(); i != cut_faces_.end(); ++i)
       {
+        FOUR_C_ASSERT(
+            *i != nullptr, "Side in element with id %i  hasn't been initialized!", this->id());
         Side* s = *i;
 
         if (s->is_level_set_side()) continue;  // do not deal with level-set sides here!
@@ -429,6 +438,7 @@ void Cut::Element::find_node_positions()
           break;
         }
       }
+      std::cout << "End Checking sides" << std::endl;
 
       if (done) continue;  // next node
 
@@ -440,15 +450,20 @@ void Cut::Element::find_node_positions()
 
       const plain_facet_set& facets = p->facets();
 
+      std::cout << " Checking facets" << std::endl;
       // loop all the facets sharing this node
       for (plain_facet_set::const_iterator j = facets.begin(); j != facets.end(); ++j)
       {
+        FOUR_C_ASSERT(
+            *j != nullptr, "Facet in element with id %i  hasn't been initialized!", this->id());
         Facet* f = *j;
 
         // loop all the cut-faces stored for this element
         // (includes cut-faces that only touch the element at points, edges, sides or parts of them)
         for (plain_side_set::const_iterator i = cut_faces_.begin(); i != cut_faces_.end(); ++i)
         {
+          FOUR_C_ASSERT(
+              *i != nullptr, "Side in element with id %i  hasn't been initialized!", this->id());
           Side* s = *i;
 
           if (s->is_level_set_side()) continue;  // do not deal with level-set sides here!
@@ -459,6 +474,7 @@ void Cut::Element::find_node_positions()
           // the facet)?
           // - however we include cut-sides of neighboring elements that only touches the facet,
           // - the facet however has to an element's facet
+          std::cout << "---- Checking again facets" << std::endl;
           if (f->is_cut_side(s) and is_facet(f))
           {
             // for inside-outside decision there must be a direct line connection between the point
@@ -466,8 +482,10 @@ void Cut::Element::find_node_positions()
             // p
 
             std::map<std::pair<Point*, Point*>, plain_facet_set> lines;
+            std::cout << "---- Getting lines" << std::endl;
             f->get_lines(lines);  // all facet's lines, each line sorted by P1->Id() < P2->Id()
 
+            std::cout << "---- Getting lines: for loop" << std::endl;
             for (std::map<std::pair<Point*, Point*>, plain_facet_set>::iterator line_it =
                      lines.begin();
                  line_it != lines.end(); line_it++)
@@ -475,6 +493,11 @@ void Cut::Element::find_node_positions()
               std::pair<Point*, Point*> line = line_it->first;
 
               Point* cutpoint = nullptr;
+
+              FOUR_C_ASSERT(line.first != nullptr,
+                  "Point 1 on line in element with id %i  hasn't been initialized!", this->id());
+              FOUR_C_ASSERT(line.second != nullptr,
+                  "Point 2 on line in element with id %i  hasn't been initialized!", this->id());
 
               // find the right facet's line and the which endpoint is the cut-point
               if (line.first->id() == p->id() and line.second->is_cut(s))
@@ -495,7 +518,9 @@ void Cut::Element::find_node_positions()
               //---------------------------------------------------
               // call the main routine to compute the position based on the angle between
               // the line-vec (p-c) and an appropriate cut-side
+              std::cout << "---- Compute position" << std::endl;
               done = compute_position(p, cutpoint, f, s);
+              std::cout << "---- End Compute position" << std::endl;
               //---------------------------------------------------
 
               if (done) break;
@@ -507,6 +532,7 @@ void Cut::Element::find_node_positions()
 
         if (done) break;
       }  // loop facets
+      std::cout << "End Checking facets" << std::endl;
       if (p->position() == Point::undecided)
       {
         // Still undecided! No facets with cut side attached! Will be set in a
@@ -528,11 +554,13 @@ void Cut::Element::find_node_positions()
       const plain_facet_set& facets = p->facets();
       for (plain_facet_set::const_iterator k = facets.begin(); k != facets.end(); ++k)
       {
+        FOUR_C_ASSERT(
+            *k != nullptr, "Facet in element with id %i  hasn't been initialized!", this->id());
         Facet* f = *k;
         f->position(pos);
       }
     }  // end if outside or inside
-
+    std::cout << "end find_node_positions" << std::endl;
   }  // loop nodes
 }
 
