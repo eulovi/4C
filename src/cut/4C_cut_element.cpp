@@ -674,7 +674,9 @@ bool Cut::Element::position_by_angle(Point* p, Point* cutpoint, Side* s)
   Core::LinAlg::Matrix<3, 1> xyz(true);
   Core::LinAlg::Matrix<3, 1> cut_point_xyz(true);
 
+  std::cout << "-----Get p coordinates" << std::endl;
   p->coordinates(xyz.data());
+  std::cout << "-----Get cutpoint coordinates" << std::endl;
   cutpoint->coordinates(cut_point_xyz.data());
 
   //------------------------------------------------------------------------
@@ -687,6 +689,7 @@ bool Cut::Element::position_by_angle(Point* p, Point* cutpoint, Side* s)
   s->normal(rs, normal);  // outward pointing normal at cut-point
 
   Core::LinAlg::Matrix<3, 1> line_vec(true);
+  std::cout << "-----Get line_vec.update" << std::endl;
   line_vec.update(
       1.0, xyz, -1.0, cut_point_xyz);  // vector representing the line between p and the cut-point
 
@@ -695,6 +698,7 @@ bool Cut::Element::position_by_angle(Point* p, Point* cutpoint, Side* s)
   double l_norm = line_vec.norm2();
   if (n_norm < MERGING_TOLERANCE or l_norm < MERGING_TOLERANCE)
   {
+    std::cout << "-----check norm agains MERGING_TOLERANCE" << std::endl;
     double distance_between = Cut::distance_between_points(p, cutpoint);
     FOUR_C_THROW(
         " the norm of line_vec or n_norm is smaller than %lf, should these "
@@ -708,20 +712,23 @@ bool Cut::Element::position_by_angle(Point* p, Point* cutpoint, Side* s)
 
   if (cosine > 0.0 + 1e-3)
   {
+    std::cout << "-----set position outside" << std::endl;
     p->position(Point::outside);
-    // std::cout << " set position to outside" << std::endl;
+    std::cout << " set position to outside" << std::endl;
     return true;
   }
   else if (cosine < 0.0 - 1e-3)
   {
+    std::cout << "-----set position inside" << std::endl;
     p->position(Point::inside);
-    // std::cout << " set position to inside" << std::endl;
+    std::cout << " set position to inside" << std::endl;
     return true;
   }
   else
   {
     // Still undecided!
     // There must be another side with cosine != 0.0
+    std::cout << "-----set position undecided" << std::endl;
     return false;
   }
   //------------------------------------------------------------------------
