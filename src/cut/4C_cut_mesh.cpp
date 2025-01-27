@@ -1076,6 +1076,9 @@ void Cut::Mesh::find_node_positions()
   for (std::map<int, std::shared_ptr<Element>>::iterator i = elements_.begin();
        i != elements_.end(); ++i)
   {
+    FOUR_C_ASSERT(
+        i->second != nullptr, "This element with id %i  hasn't been initialized!", i->first);
+    std::cout << "Reading element" << std::endl;
     Element& e = *i->second;
     try
     {
@@ -1090,6 +1093,9 @@ void Cut::Mesh::find_node_positions()
   for (std::map<int, std::shared_ptr<Element>>::iterator i = shadow_elements_.begin();
        i != shadow_elements_.end(); ++i)
   {
+    FOUR_C_ASSERT(
+        i->second != nullptr, "This element with id %i  hasn't been initialized!", i->first);
+    std::cout << "Reading shadow element" << std::endl;
     Element& e = *i->second;
     try
     {
