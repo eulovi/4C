@@ -330,6 +330,9 @@ namespace Cut
 
     //! whether this facet lie on a plane?
     bool is_planar_;
+
+    /// is this facet currently in a process of position definition?
+    bool is_facet_pos_processed_ = false;
   };
 
   template <class T>
