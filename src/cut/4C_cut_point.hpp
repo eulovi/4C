@@ -398,6 +398,9 @@ namespace Cut
     /// points that were merged here during replacement
     std::vector<Point*> merged_points_;
 
+    /// is this point currently in a process of position definition?
+    bool is_point_pos_processed_ = false;
+
 #if CUT_CREATION_INFO
 
     // Map that indicates whether cut pairs whether originally (during point creation) or later
