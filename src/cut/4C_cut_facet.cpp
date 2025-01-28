@@ -514,15 +514,18 @@ void Cut::Facet::position(Point::PointPosition pos)
         for (std::vector<Point*>::iterator i = points_.begin(); i != points_.end(); ++i)
         {
           Point* p = *i;
-          if (p->position() == Point::undecided)
+          if (p != nullptr)
           {
-            p->position(pos);
+            if (p->position() == Point::undecided)
+            {
+              p->position(pos);
+            }
           }
         }
         for (plain_volumecell_set::iterator i = cells_.begin(); i != cells_.end(); ++i)
         {
           VolumeCell* c = *i;
-          c->position(pos);
+          if (c != nullptr) c->position(pos);
         }
       }
     }
