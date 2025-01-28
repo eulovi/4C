@@ -514,17 +514,17 @@ void Cut::Facet::position(Point::PointPosition pos)
       position_ = pos;
       if (pos == Point::outside or pos == Point::inside)
       {
-        for (std::vector<Point*>::iterator i = points_.begin(); i != points_.end(); ++i)
-        {
-          Point* p = *i;
-          if (p != nullptr)
-          {
-            if (p->position() == Point::undecided)
-            {
-              p->position(pos);
-            }
-          }
-        }
+        //        for (std::vector<Point*>::iterator i = points_.begin(); i != points_.end(); ++i)
+        //        {
+        //          Point* p = *i;
+        //          if (p != nullptr)
+        //          {
+        //            if (p->position() == Point::undecided)
+        //            {
+        //              p->position(pos);
+        //            }
+        //          }
+        //        }
         for (plain_volumecell_set::iterator i = cells_.begin(); i != cells_.end(); ++i)
         {
           VolumeCell* c = *i;
