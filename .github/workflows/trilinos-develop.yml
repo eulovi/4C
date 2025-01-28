@@ -76,8 +76,6 @@ jobs:
       test-chunks: ${{ steps.set-matrix.outputs.chunk-array }}
     steps:
       - uses: actions/checkout@v4
-      - name: Check docker hash
-        uses: ./.github/actions/compute-and-check-dependencies-hash
       - uses: ./.github/actions/build_4C
         with:
           cmake-preset: docker_assertions
