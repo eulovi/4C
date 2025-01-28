@@ -517,6 +517,9 @@ Cut::Node* Cut::Point::cut_node()
  *----------------------------------------------------------------------------*/
 void Cut::Point::position(Point::PointPosition pos)
 {
+  if (is_point_pos_processed_) return;  // Prevent re-processing
+  is_point_pos_processed_ = true;  // As this point is already being processed, mark it as processed
+
   if (position_ != pos)
   {
     //  safety check, if the position of a facet changes from one side to the other
@@ -542,6 +545,8 @@ void Cut::Point::position(Point::PointPosition pos)
       }
     }
   }
+
+  is_point_pos_processed_ = false;  // reset the point status for future updates
 }
 
 /*----------------------------------------------------------------------------*

@@ -500,6 +500,9 @@ bool Cut::Facet::is_cut_side(Side* side)
  *----------------------------------------------------------------------------*/
 void Cut::Facet::position(Point::PointPosition pos)
 {
+  if (is_facet_pos_processed_) return;  // Prevent re-processing
+  is_facet_pos_processed_ = true;  // As this facet is already being processed, mark it as processed
+
   FOUR_C_ASSERT(is_cut_position_unchanged(position_, pos),
       "Are you sure that you want to change the facet-position from inside to outside or vice "
       "versa?");
@@ -530,6 +533,8 @@ void Cut::Facet::position(Point::PointPosition pos)
       }
     }
   }
+
+  is_facet_pos_processed_ = false;  // reset the point status for future updates
 }
 
 /*----------------------------------------------------------------------------*

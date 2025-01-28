@@ -401,6 +401,9 @@ namespace Cut
     /// Gauss rule for this volumecell. In case of DirectDivergence method, this just stores main
     /// Gauss points
     std::shared_ptr<Core::FE::GaussPoints> gp_;
+
+    /// is this volumecell currently in a process of position definition?
+    bool is_volumecell_pos_processed_ = false;
   };
 
 }  // namespace Cut

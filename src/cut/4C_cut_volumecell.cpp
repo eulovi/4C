@@ -340,6 +340,11 @@ void Cut::VolumeCell::connect_nodal_dof_sets(bool include_inner)
  *----------------------------------------------------------------------------*/
 void Cut::VolumeCell::position(Point::PointPosition position)
 {
+  /// is this volumecell currently in a process of position definition?
+  if (is_volumecell_pos_processed_) return;  // Prevent re-processing
+  is_volumecell_pos_processed_ =
+      true;  // As this volumecell is already being processed, mark it as processed
+
   if (position_ != position)
   {
     position_ = position;
@@ -354,6 +359,8 @@ void Cut::VolumeCell::position(Point::PointPosition position)
       }
     }
   }
+
+  is_volumecell_pos_processed_ = false;  // reset the point status for future updates
 }
 
 /*----------------------------------------------------------------------------*
