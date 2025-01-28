@@ -537,7 +537,7 @@ void Cut::Point::position(Point::PointPosition pos)
         for (plain_facet_set::iterator i = facets_.begin(); i != facets_.end(); ++i)
         {
           Facet* f = *i;
-          f->position(pos);
+          if (f != nullptr) f->position(pos);
         }
       }
     }
