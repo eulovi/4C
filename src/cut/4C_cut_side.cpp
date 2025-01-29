@@ -1678,7 +1678,7 @@ bool Cut::ConcreteSide<probdim, sidetype, num_nodes_side, dim>::is_closer_side(
   {
     // The main decision if the side lies closer to the start-point than the other side
 
-    //    std::cout << "line_xi " << line_xi << std::endl;
+    // std::cout << "line_xi " << line_xi << std::endl;
 
     if (line_xi > 1.0 + REFERENCETOL)
     {
@@ -1695,6 +1695,10 @@ bool Cut::ConcreteSide<probdim, sidetype, num_nodes_side, dim>::is_closer_side(
       // std::cout << "line_xi " << line_xi << std::endl;
       // std::cout << "check if both sides lie in one plane " << std::endl;
 
+      return false;
+    }
+    else if (line_xi == 1.0)
+    {
       return false;
     }
     else if (line_xi < 1.0 - REFERENCETOL and line_xi > -1.0 + REFERENCETOL)
@@ -1729,7 +1733,7 @@ bool Cut::ConcreteSide<probdim, sidetype, num_nodes_side, dim>::is_closer_side(
     {
       // undermined range of local coordinates!
 
-      std::cout << "line_xi " << line_xi << std::endl;
+      std::cout << "problematic line_xi " << std::setprecision(15) << line_xi << std::endl;
       std::cout << "cut point found, but the local line coordinates along the "
                    "ray-tracing line lies in undefined region"
                 << std::endl;

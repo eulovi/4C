@@ -27,7 +27,7 @@
 
 
 #define REFERENCETOL \
-  (BASICTOL * 10.0)  // tolerance to check coordinates in the relative coordinate system (assumtion
+  (BASICTOL * 100.0)  // tolerance to check coordinates in the relative coordinate system (assumtion
                      // is that abs(max(value)) = 1.0)!
 
 // Not in use anymore.

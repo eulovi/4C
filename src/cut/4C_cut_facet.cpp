@@ -500,6 +500,9 @@ bool Cut::Facet::is_cut_side(Side* side)
  *----------------------------------------------------------------------------*/
 void Cut::Facet::position(Point::PointPosition pos)
 {
+  if (is_facet_pos_processed_) return;  // Prevent re-processing
+  is_facet_pos_processed_ = true;  // As this facet is already being processed, mark it as processed
+
   FOUR_C_ASSERT(is_cut_position_unchanged(position_, pos),
       "Are you sure that you want to change the facet-position from inside to outside or vice "
       "versa?");
@@ -511,22 +514,27 @@ void Cut::Facet::position(Point::PointPosition pos)
       position_ = pos;
       if (pos == Point::outside or pos == Point::inside)
       {
-        for (std::vector<Point*>::iterator i = points_.begin(); i != points_.end(); ++i)
-        {
-          Point* p = *i;
-          if (p->position() == Point::undecided)
-          {
-            p->position(pos);
-          }
-        }
+        //        for (std::vector<Point*>::iterator i = points_.begin(); i != points_.end(); ++i)
+        //        {
+        //          Point* p = *i;
+        //          if (p != nullptr)
+        //          {
+        //            if (p->position() == Point::undecided)
+        //            {
+        //              p->position(pos);
+        //            }
+        //          }
+        //        }
         for (plain_volumecell_set::iterator i = cells_.begin(); i != cells_.end(); ++i)
         {
           VolumeCell* c = *i;
-          c->position(pos);
+          if (c != nullptr) c->position(pos);
         }
       }
     }
   }
+
+  is_facet_pos_processed_ = false;  // reset the point status for future updates
 }
 
 /*----------------------------------------------------------------------------*
