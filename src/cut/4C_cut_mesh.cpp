@@ -1245,7 +1245,8 @@ void Cut::Mesh::find_facet_positions()
   if (cells_.size() == undecided.size() and cells_.size() > 0)
     FOUR_C_THROW("all volume cells undecided and volume cells available");
 
-  while (undecided.size() > 0)
+  int iteration_limit = 0;
+  while (undecided.size() > 0 and iteration_limit < 50)
   {
     unsigned size = undecided.size();
     for (plain_volumecell_set::iterator ui = undecided.begin(); ui != undecided.end();)
@@ -1292,69 +1293,75 @@ void Cut::Mesh::find_facet_positions()
         ++ui;
       }
     }
+    iteration_limit = iteration_limit + 1;
     //    if (size == undecided.size())
     //      FOUR_C_THROW(
     //          "no progress in volume cell position, the number of undecided volume cells is %i",
     //          undecided.size());
   }
+  std::cout
+      << "WARNING: " << undecided.size()
+      << " %i volume cell positions were not determined, we will continue with the cut process. "
+      << std::endl;
 
   // second pass
 
-  for (std::list<std::shared_ptr<VolumeCell>>::iterator i = cells_.begin(); i != cells_.end(); ++i)
-  {
-    VolumeCell* c = &**i;
-    const plain_facet_set& facets = c->facets();
-
-    bool haveundecided = false;
-    bool havecutsurface = false;
-    Cut::Point::PointPosition position = Cut::Point::undecided;
-    for (plain_facet_set::const_iterator i = facets.begin(); i != facets.end(); ++i)
-    {
-      Facet* f = *i;
-      Cut::Point::PointPosition fp = f->position();
-      switch (fp)
-      {
-        case Cut::Point::undecided:
-          haveundecided = true;
-          break;
-        case Cut::Point::oncutsurface:
-          havecutsurface = true;
-          break;
-        case Cut::Point::inside:
-        case Cut::Point::outside:
-          if (position != Cut::Point::undecided and position != fp)
-          {
-            FOUR_C_THROW("mixed facet set");
-          }
-          position = fp;
-      }
-    }
-
-    // this is a bold assumption.
-
-    if (position == Cut::Point::undecided)
-    {
-      if (havecutsurface)
-        position = Cut::Point::inside;
-      else
-        position = Cut::Point::outside;
-    }
-
-    //   set any undecided facets in a decided volume cell
-
-    if (haveundecided and position != Cut::Point::undecided)
-    {
-      for (plain_facet_set::const_iterator i = facets.begin(); i != facets.end(); ++i)
-      {
-        Facet* f = *i;
-        Cut::Point::PointPosition fp = f->position();
-        if (fp == Cut::Point::undecided)
-        {
-          f->position(position);
-        }
-      }
-    }
-  }
+  //  for (std::list<std::shared_ptr<VolumeCell>>::iterator i = cells_.begin(); i != cells_.end();
+  //  ++i)
+  //  {
+  //    VolumeCell* c = &**i;
+  //    const plain_facet_set& facets = c->facets();
+  //
+  //    bool haveundecided = false;
+  //    bool havecutsurface = false;
+  //    Cut::Point::PointPosition position = Cut::Point::undecided;
+  //    for (plain_facet_set::const_iterator i = facets.begin(); i != facets.end(); ++i)
+  //    {
+  //      Facet* f = *i;
+  //      Cut::Point::PointPosition fp = f->position();
+  //      switch (fp)
+  //      {
+  //        case Cut::Point::undecided:
+  //          haveundecided = true;
+  //          break;
+  //        case Cut::Point::oncutsurface:
+  //          havecutsurface = true;
+  //          break;
+  //        case Cut::Point::inside:
+  //        case Cut::Point::outside:
+  //          if (position != Cut::Point::undecided and position != fp)
+  //          {
+  //            FOUR_C_THROW("mixed facet set");
+  //          }
+  //          position = fp;
+  //      }
+  //    }
+  //
+  //    // this is a bold assumption.
+  //
+  //    if (position == Cut::Point::undecided)
+  //    {
+  //      if (havecutsurface)
+  //        position = Cut::Point::inside;
+  //      else
+  //        position = Cut::Point::outside;
+  //    }
+  //
+  //    //   set any undecided facets in a decided volume cell
+  //
+  //    if (haveundecided and position != Cut::Point::undecided)
+  //    {
+  //      for (plain_facet_set::const_iterator i = facets.begin(); i != facets.end(); ++i)
+  //      {
+  //        Facet* f = *i;
+  //        Cut::Point::PointPosition fp = f->position();
+  //        if (fp == Cut::Point::undecided)
+  //        {
+  //          f->position(position);
+  //        }
+  //      }
+  //    }
+  //  }
 }
 
 
