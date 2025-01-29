@@ -1175,6 +1175,9 @@ void Cut::Mesh::find_facet_positions()
       for (plain_facet_set::const_iterator i = facets.begin(); i != facets.end(); ++i)
       {
         Facet* f = *i;
+
+        // let's be sure that the facets are all ahving a decided position. For this, check if the points of the facets have a position
+        // for (plain_point_set::iterator point = f->points(); point != )
         Point::PointPosition fp = f->position();
         switch (fp)
         {
@@ -1262,7 +1265,7 @@ void Cut::Mesh::find_facet_positions()
         ++ui;
       }
     }
-    if (size == undecided.size()) FOUR_C_THROW("no progress in volume cell position");
+    if (size == undecided.size()) FOUR_C_THROW("no progress in volume cell position, the number of undecided volume cells is %i", undecided.size());
   }
 
   // second pass
