@@ -349,16 +349,16 @@ void Cut::VolumeCell::position(Point::PointPosition position)
   {
     position_ = position;
 
-    //    for (plain_facet_set::const_iterator i = facets_.begin(); i != facets_.end(); ++i)
-    //    {
-    //      Facet* f = *i;
-    //      if (f != nullptr) continue;
-    //      Point::PointPosition fp = f->position();
-    //      if (fp == Point::undecided)
-    //      {
-    //        f->position(position);
-    //      }
-    //    }
+    for (plain_facet_set::const_iterator i = facets_.begin(); i != facets_.end(); ++i)
+    {
+      Facet* f = *i;
+      if (f != nullptr) continue;
+      Point::PointPosition fp = f->position();
+      if (fp == Point::undecided)
+      {
+        f->position(position);
+      }
+    }
   }
 
   is_volumecell_pos_processed_ = false;  // reset the point status for future updates
