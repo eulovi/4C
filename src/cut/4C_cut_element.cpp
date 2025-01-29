@@ -381,7 +381,7 @@ void Cut::Element::make_facets(Mesh& mesh)
  *------------------------------------------------------------------------------------------*/
 void Cut::Element::find_node_positions()
 {
-  std::cout << "start find_node_positions" << std::endl;
+  //  std::cout << "start find_node_positions" << std::endl;
   // DEBUG flag for FindNodePositions
   // compute positions for nodes again, also if already set by other nodes, facets, vcs (safety
   // check)
@@ -486,7 +486,7 @@ void Cut::Element::find_node_positions()
             //            std::cout << "---- Getting lines" << std::endl;
             f->get_lines(lines);  // all facet's lines, each line sorted by P1->Id() < P2->Id()
 
-            std::cout << "---- Getting lines: for loop" << std::endl;
+            //            std::cout << "---- Getting lines: for loop" << std::endl;
             for (std::map<std::pair<Point*, Point*>, plain_facet_set>::iterator line_it =
                      lines.begin();
                  line_it != lines.end(); line_it++)

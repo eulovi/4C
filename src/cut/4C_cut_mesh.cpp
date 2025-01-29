@@ -1175,33 +1175,34 @@ void Cut::Mesh::find_facet_positions()
       for (plain_facet_set::const_iterator i = facets.begin(); i != facets.end(); ++i)
       {
         Facet* f = *i;
-        Point::PointPosition temp_fp = f->position();
-
-        // let's be sure that the facets are all having a decided position. For this,
-        // check if the points of the facets have an inside/outside position
-        if (temp_fp == Point::undecided)
-        {
-          const std::vector<Point*>& facet_points = f->points();
-
-          Point::PointPosition possible_facet_pos = Point::undecided;
-          for (Point* point : facet_points)
-          {
-            Point::PointPosition point_pos = point->position();
-
-            if (point_pos != Point::undecided)
-            {
-              if (possible_facet_pos != Point::undecided and possible_facet_pos != point_pos)
-                FOUR_C_THROW(
-                    "There is a possible problem on the point position, as some points of this "
-                    "facet are outside and inside");
-              else
-                possible_facet_pos = point_pos;
-            }
-          }
-
-          // assign the found position to this facet
-          f->position(possible_facet_pos);
-        }
+        //        Point::PointPosition temp_fp = f->position();
+        //
+        //        // let's be sure that the facets are all having a decided position. For this,
+        //        // check if the points of the facets have an inside/outside position
+        //        if (temp_fp == Point::undecided)
+        //        {
+        //          const std::vector<Point*>& facet_points = f->points();
+        //
+        //          Point::PointPosition possible_facet_pos = Point::undecided;
+        //          for (Point* point : facet_points)
+        //          {
+        //            Point::PointPosition point_pos = point->position();
+        //
+        //            if (point_pos != Point::undecided)
+        //            {
+        //              if (possible_facet_pos != Point::undecided and possible_facet_pos !=
+        //              point_pos)
+        //                FOUR_C_THROW(
+        //                    "There is a possible problem on the point position, as some points of
+        //                    this " "facet are outside and inside");
+        //              else
+        //                possible_facet_pos = point_pos;
+        //            }
+        //          }
+        //
+        //          // assign the found position to this facet
+        //          f->position(possible_facet_pos);
+        //        }
 
 
         Point::PointPosition fp = f->position();
