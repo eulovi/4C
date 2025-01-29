@@ -1078,7 +1078,7 @@ void Cut::Mesh::find_node_positions()
   {
     FOUR_C_ASSERT(
         i->second != nullptr, "This element with id %i  hasn't been initialized!", i->first);
-    std::cout << "Reading element" << std::endl;
+    //    std::cout << "Reading element" << std::endl;
     Element& e = *i->second;
     try
     {
@@ -1095,7 +1095,7 @@ void Cut::Mesh::find_node_positions()
   {
     FOUR_C_ASSERT(
         i->second != nullptr, "This element with id %i  hasn't been initialized!", i->first);
-    std::cout << "Reading shadow element" << std::endl;
+    //    std::cout << "Reading shadow element" << std::endl;
     Element& e = *i->second;
     try
     {
