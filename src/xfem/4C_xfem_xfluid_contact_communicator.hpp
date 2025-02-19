@@ -363,9 +363,6 @@ namespace XFEM
     /// Contact Elements with increased number of GPs synchronized
     std::set<int> higher_contact_elements_comm_;
 
-    /// For Gmsh Output
-    std::vector<std::vector<std::pair<Core::LinAlg::Matrix<3, 1>, double>>> plot_data_;
-
     /// Summarized Contact gps
     /// 0 ... Contact, 1 ... Contact_NoContactNoFSI, 2 ... Contact_NoContactFSI, 3 ...
     /// FSI_NoContact, 4 ... FSI_Contact
