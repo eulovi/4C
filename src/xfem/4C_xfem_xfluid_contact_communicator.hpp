@@ -22,8 +22,6 @@
 
 FOUR_C_NAMESPACE_OPEN
 
-// #define WRITE_GMSH
-
 namespace Mortar
 {
   class Element;
@@ -226,9 +224,6 @@ namespace XFEM
 
     /// Initialize Gmsh files
     void create_new_gmsh_files();
-
-    /// Write Gmsh files
-    void gmsh_write(Core::LinAlg::Matrix<3, 1> x, double val, int section);
 
     /// Increment gausspoint counter
     void inc_gp(int state) { ++sum_gps_[state]; }

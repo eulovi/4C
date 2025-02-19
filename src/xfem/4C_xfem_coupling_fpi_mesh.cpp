@@ -456,15 +456,6 @@ void XFEM::MeshCouplingFPI::update_configuration_map_gp_contact(
   XFEM::Utils::get_navier_slip_stabilization_parameters(
       visc_stab_tang, dynvisc, sliplength, stabnit, stabadj);
 
-#ifdef WRITE_GMSH
-  if (coupled_field_ == MeshCouplingFPI::ps_ps)
-  {
-    xf_c_comm_->Gmsh_Write(x, *fulltraction, 1);
-    xf_c_comm_->Gmsh_Write(x, (double)pure_fsi, 3);
-    xf_c_comm_->Gmsh_Write(x, sliplength, 6);
-  }
-#endif
-
   // Overall there are 9 coupling blocks to evaluate for fpi:
   // 1 - ps_ps --> ff,fps,psf,psps
   // 2 - ps_pf --> fpf,pspf
@@ -534,10 +525,6 @@ void XFEM::MeshCouplingFPI::update_configuration_map_gp_contact(
           get_fpi_pcontact_exchange_dist() > 1e-16)
         ffac = gap / (get_fpi_pcontact_exchange_dist())-get_fpi_pcontact_fullfraction();
       if (ffac < 0) ffac = 0;
-
-#ifdef WRITE_GMSH
-      xf_c_comm_->Gmsh_Write(x, ffac, 10);
-#endif
 
       configuration_map_[Inpar::XFEM::X_Con_n_Row].second = ffac;
 

@@ -1436,46 +1436,6 @@ double XFEM::XFluidContactComm::get_fpi_pcontact_fullfraction()
 
 void XFEM::XFluidContactComm::create_new_gmsh_files()
 {
-#ifdef WRITE_GMSH
-  std::vector<std::string> sections;
-  sections.push_back("Contact_Traction");           // 0
-  sections.push_back("FSI_Traction");               // 1
-  sections.push_back("Contact_Active");             // 2
-  sections.push_back("FSI_Active");                 // 3
-  sections.push_back("Contact_Traction_Solid");     // 4
-  sections.push_back("Contact_Traction_Fluid");     // 5
-  sections.push_back("FSI_sliplenth");              // 6
-  sections.push_back("All_GPs_Contact");            // 7
-  sections.push_back("Contact_PoroFlow_Active");    // 8
-  sections.push_back("Contact_PoroFlow_Inactive");  // 9
-  sections.push_back("FPI_PoroFlow_Ffac");          // 10
-
-  static int counter = 0;
-  if (counter)
-  {
-    std::stringstream str;
-    str << "FSCI_" << counter << "_" << Core::Communication::my_mpi_rank(fluiddis_->Comm())
-        << ".pos";
-    std::ofstream file(str.str().c_str());
-    for (std::size_t section = 0; section < sections.size(); ++section)
-    {
-      Cut::Output::gmsh_new_section(file, sections[section], false);
-      for (std::size_t entry = 0; entry < (plot_data_[section]).size(); ++entry)
-      {
-        Cut::Output::gmsh_coord_dump(
-            file, (plot_data_[section])[entry].first, (plot_data_[section])[entry].second);
-      }
-      Cut::Output::gmsh_end_section(file, false);
-    }
-    file.close();
-  }
-  ++counter;
-  if (counter > 100) counter = 1;
-
-  plot_data_.clear();
-  plot_data_.resize(sections.size());
-#endif
-
   sum_gps_.resize(5);
   std::vector<int> g_sum_gps(5);
   Core::Communication::sum_all(sum_gps_.data(), g_sum_gps.data(), 5, fluiddis_->get_comm());
@@ -1495,13 +1455,6 @@ void XFEM::XFluidContactComm::create_new_gmsh_files()
   }
   sum_gps_.clear();
   sum_gps_.resize(5);
-}
-
-void XFEM::XFluidContactComm::gmsh_write(Core::LinAlg::Matrix<3, 1> x, double val, int section)
-{
-#ifdef WRITE_GMSH
-  plot_data_[section].push_back(std::pair<Core::LinAlg::Matrix<3, 1>, double>(x, val));
-#endif
 }
 
 FOUR_C_NAMESPACE_CLOSE
