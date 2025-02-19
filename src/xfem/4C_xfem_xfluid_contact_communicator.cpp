@@ -117,7 +117,7 @@ void XFEM::XFluidContactComm::initialize_fluid_state(std::shared_ptr<Cut::CutWiz
 
   last_ele_h_ = std::pair<int, double>(-1, -1);
 
-  create_new_gmsh_files();
+  print_summary_contact_gps();
 }
 
 double XFEM::XFluidContactComm::get_fsi_traction(Mortar::Element* ele,
@@ -1370,7 +1370,7 @@ double XFEM::XFluidContactComm::get_fpi_pcontact_fullfraction()
   return mcfpi_ps_pf_->get_fpi_pcontact_fullfraction();
 }
 
-void XFEM::XFluidContactComm::create_new_gmsh_files()
+void XFEM::XFluidContactComm::print_summary_contact_gps()
 {
   sum_gps_.resize(5);
   std::vector<int> g_sum_gps(5);

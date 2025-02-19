@@ -222,8 +222,8 @@ namespace XFEM
       return (higher_contact_elements_comm_.find(cid) != higher_contact_elements_comm_.end());
     }
 
-    /// Initialize Gmsh files
-    void create_new_gmsh_files();
+    /// Print a summary of contact GPs
+    void print_summary_contact_gps();
 
     /// Increment gausspoint counter
     void inc_gp(int state) { ++sum_gps_[state]; }
