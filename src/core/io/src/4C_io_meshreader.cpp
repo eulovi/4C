@@ -168,7 +168,7 @@ void Core::IO::MeshReader::rebalance()
                       << "hypergraph"
                       << " .........\n";
 
-          rebalanceParams.set("partitioning method", "HYPERGRAPH");
+          rebalanceParams.set("partitioning method", "graph");
 
           // here we can reuse the graph, which was calculated before, this saves us some time
           std::tie(rowmap, colmap) =
