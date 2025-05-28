@@ -68,14 +68,21 @@ void Core::FE::assemble_nodal_element_count(
 
 void Core::FE::extrapolate_gauss_point_quantity_to_nodes(Core::Elements::Element& ele,
     const Core::LinAlg::SerialDenseMatrix& data, const Core::FE::Discretization& dis,
-    Core::LinAlg::MultiVector<double>& nodal_data)
+    Core::LinAlg::MultiVector<double>& nodal_data,
+    const Core::FE::GaussIntegration* gauss_integration)
 {
   switch (ele.shape())
   {
     case Core::FE::CellType::hex8:
     {
-      Core::FE::extrapolate_gp_quantity_to_nodes_and_assemble<Core::FE::CellType::hex8>(ele, data,
-          nodal_data, true, get_gauss_integration<Core::FE::CellType::hex8>(data.numRows()));
+      if (get_gauss_integration<Core::FE::CellType::hex8>(data.numRows()).get_int_rule() !=
+          GaussRule3D::undefined)
+      {
+        Core::FE::extrapolate_gp_quantity_to_nodes_and_assemble<Core::FE::CellType::hex8>(ele, data,
+            nodal_data, true, get_gauss_integration<Core::FE::CellType::hex8>(data.numRows()));
+      }
+      else
+        break;
     }
     break;
     case Core::FE::CellType::hex27:
@@ -111,8 +118,15 @@ void Core::FE::extrapolate_gauss_point_quantity_to_nodes(Core::Elements::Element
     break;
     case Core::FE::CellType::wedge6:
     {
-      Core::FE::extrapolate_gp_quantity_to_nodes_and_assemble<Core::FE::CellType::wedge6>(ele, data,
-          nodal_data, true, get_gauss_integration<Core::FE::CellType::wedge6>(data.numRows()));
+      if (get_gauss_integration<Core::FE::CellType::wedge6>(data.numRows()).get_int_rule() !=
+          GaussRule3D::undefined)
+      {
+        Core::FE::extrapolate_gp_quantity_to_nodes_and_assemble<Core::FE::CellType::wedge6>(ele,
+            data, nodal_data, true,
+            get_gauss_integration<Core::FE::CellType::wedge6>(data.numRows()));
+      }
+      else
+        break;
     }
     break;
     case Core::FE::CellType::wedge15:

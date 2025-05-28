@@ -423,6 +423,25 @@ namespace Core::IO
 
   /*-----------------------------------------------------------------------------------------------*
    *-----------------------------------------------------------------------------------------------*/
+  // void DiscretizationVisualizationWriterMesh::append_element_is_element_cut()
+  // {
+  //   // vector with element cut status in the row map.
+  //   std::vector<int> material_id_of_row_elements;
+  //   material_id_of_row_elements.reserve(discretization_->num_my_row_elements());
+  //
+  //   for (const Core::Elements::Element* ele : discretization_->my_row_element_range())
+  //   {
+  //     if (element_filter_(ele))
+  //       material_id_of_row_elements.push_back(ele->material(0)->parameter()->id());
+  //   }
+  //
+  //   // Pass data to the output writer.
+  //   visualization_manager_->get_visualization_data().set_cell_data_vector(
+  //       "material_id", material_id_of_row_elements, 1);
+  // }
+
+  /*-----------------------------------------------------------------------------------------------*
+   *-----------------------------------------------------------------------------------------------*/
   void DiscretizationVisualizationWriterMesh::append_element_material_id()
   {
     // vector with material IDs for elements in the row map.

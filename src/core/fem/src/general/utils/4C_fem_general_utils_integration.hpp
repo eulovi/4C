@@ -119,7 +119,7 @@ namespace Core::FE
       case 1000:
         return GaussRule3D::hex_1000point;
       default:
-        FOUR_C_THROW("I don't know the GaussRule3D for hex elements with {} Gauss points", numgp);
+        return GaussRule3D::undefined;
     }
   }
 
@@ -171,7 +171,7 @@ namespace Core::FE
       case 9:
         return GaussRule3D::wedge_9point;
       default:
-        FOUR_C_THROW("I don't know the GaussRule3D for wedge elements with {} Gauss points", numgp);
+        return GaussRule3D::undefined;
     }
   }
 

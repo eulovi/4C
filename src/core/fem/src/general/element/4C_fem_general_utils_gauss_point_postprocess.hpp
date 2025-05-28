@@ -11,6 +11,7 @@
 #include "4C_config.hpp"
 
 #include "4C_fem_general_element.hpp"
+#include "4C_fem_general_utils_gausspoints.hpp"
 #include "4C_linalg_serialdensematrix.hpp"
 #include "4C_linalg_vector.hpp"
 
@@ -58,7 +59,8 @@ namespace Core::FE
    */
   void extrapolate_gauss_point_quantity_to_nodes(Core::Elements::Element& ele,
       const Core::LinAlg::SerialDenseMatrix& data, const Core::FE::Discretization& dis,
-      Core::LinAlg::MultiVector<double>& nodal_data);
+      Core::LinAlg::MultiVector<double>& nodal_data,
+      const Core::FE::GaussIntegration* gauss_integration = nullptr);
 
   /*!
    * @brief Averaging of all Gauss point quantities in @data within the element @ele and assembly to

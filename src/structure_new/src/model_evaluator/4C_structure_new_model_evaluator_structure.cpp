@@ -25,6 +25,8 @@
 #include "4C_linalg_utils_sparse_algebra_create.hpp"
 #include "4C_linalg_utils_sparse_algebra_manipulation.hpp"
 #include "4C_linalg_vector.hpp"
+#include "4C_solid_3D_ele.hpp"
+#include "4C_solid_3D_ele_calc.hpp"
 #include "4C_structure_new_dbc.hpp"
 #include "4C_structure_new_discretization_runtime_output_params.hpp"
 #include "4C_structure_new_error_evaluator.hpp"
@@ -95,7 +97,7 @@ void Solid::ModelEvaluator::Structure::setup()
           *Global::Problem::instance()->output_control_file(), global_state().get_time_n());
 
       // We only want to create the respective writers if they are actually needed. Therefore, we
-      // get the global number ob beam and non-beam elements here. Based on that number we know
+      // get the global number of beam and non-beam elements here. Based on that number we know
       // which output writers need to be initialized.
       const auto discretization =
           std::dynamic_pointer_cast<const Core::FE::Discretization>(discret_ptr());
@@ -1014,7 +1016,10 @@ void Solid::ModelEvaluator::Structure::output_runtime_structure_postprocess_stre
     auto EvaluateGaussPointData = [&](const std::vector<char>& raw_data)
     {
       // Get the values at the Gauss-points.
-      std::map<int, std::shared_ptr<Core::LinAlg::SerialDenseMatrix>> mapdata{};
+      std::map<int, std::shared_ptr<Core::LinAlg::SerialDenseMatrix>> mapdata;
+
+      // For solid elements, get the integration rule from the element
+      std::map<int, Core::FE::GaussIntegration> map_gauss_integration;
 
       Core::Communication::UnpackBuffer buffer(raw_data);
       for (int i = 0; i < discret_ptr()->element_row_map()->num_my_elements(); ++i)
@@ -1025,21 +1030,31 @@ void Solid::ModelEvaluator::Structure::output_runtime_structure_postprocess_stre
               std::make_shared<Core::LinAlg::SerialDenseMatrix>();
           extract_from_pack(buffer, *gpstress);
           mapdata[discret_ptr()->element_row_map()->gid(i)] = gpstress;
+
+          Discret::Elements::Solid* solid_ele =
+              dynamic_cast<Discret::Elements::Solid*>(discret().l_row_element(i));
+          if (solid_ele)
+          {
+            map_gauss_integration.insert(
+                {discret_ptr()->element_row_map()->gid(i), solid_ele->get_gauss_rule()});
+          }
         }
       }
-      return mapdata;
+
+      return std::make_pair(mapdata, map_gauss_integration);
     };
 
     auto PostprocessGaussPointDataToNodes =
         [&](const std::map<int, std::shared_ptr<Core::LinAlg::SerialDenseMatrix>>& map_data,
-            Core::LinAlg::MultiVector<double>& assembled_data)
+            Core::LinAlg::MultiVector<double>& assembled_data,
+            std::map<int, Core::FE::GaussIntegration> gauss_integration_data)
     {
       discret_ptr()->evaluate(
           [&](Core::Elements::Element& ele)
           {
             if (DoPostprocessingOnElement(ele))
-              Core::FE::extrapolate_gauss_point_quantity_to_nodes(
-                  ele, *map_data.at(ele.id()), discret(), assembled_data);
+              Core::FE::extrapolate_gauss_point_quantity_to_nodes(ele, *map_data.at(ele.id()),
+                  discret(), assembled_data, &gauss_integration_data.at(ele.id()));
           });
     };
 
@@ -1059,7 +1074,9 @@ void Solid::ModelEvaluator::Structure::output_runtime_structure_postprocess_stre
     if (global_in_output().get_stress_output_type() != Inpar::Solid::stress_none)
     {
       std::map<int, std::shared_ptr<Core::LinAlg::SerialDenseMatrix>> gp_stress_data =
-          EvaluateGaussPointData(*eval_data().get_stress_data());
+          EvaluateGaussPointData(*eval_data().get_stress_data()).first;
+      std::map<int, Core::FE::GaussIntegration> gauss_integration_data =
+          EvaluateGaussPointData(*eval_data().get_stress_data()).second;
 
       Core::Communication::Exporter ex(
           *(discret().element_row_map()), *(discret().element_col_map()), discret().get_comm());
@@ -1073,7 +1090,7 @@ void Solid::ModelEvaluator::Structure::output_runtime_structure_postprocess_stre
 
 
       Core::LinAlg::MultiVector<double> row_nodal_data(*discret().node_row_map(), 6, true);
-      PostprocessGaussPointDataToNodes(gp_stress_data, row_nodal_data);
+      PostprocessGaussPointDataToNodes(gp_stress_data, row_nodal_data, gauss_integration_data);
       Core::LinAlg::export_to(row_nodal_data, *eval_data().get_stress_data_node_postprocessed());
 
       PostprocessGaussPointDataToElementCenter(
@@ -1082,7 +1099,9 @@ void Solid::ModelEvaluator::Structure::output_runtime_structure_postprocess_stre
     if (global_in_output().get_strain_output_type() != Inpar::Solid::strain_none)
     {
       std::map<int, std::shared_ptr<Core::LinAlg::SerialDenseMatrix>> gp_strain_data =
-          EvaluateGaussPointData(*eval_data().get_strain_data());
+          EvaluateGaussPointData(*eval_data().get_strain_data()).first;
+      std::map<int, Core::FE::GaussIntegration> gauss_integration_data =
+          EvaluateGaussPointData(*eval_data().get_stress_data()).second;
 
       Core::Communication::Exporter ex(
           *(discret().element_row_map()), *(discret().element_col_map()), discret().get_comm());
@@ -1095,7 +1114,7 @@ void Solid::ModelEvaluator::Structure::output_runtime_structure_postprocess_stre
               *discret().element_row_map(), 6, true);
 
       Core::LinAlg::MultiVector<double> row_nodal_data(*discret().node_row_map(), 6, true);
-      PostprocessGaussPointDataToNodes(gp_strain_data, row_nodal_data);
+      PostprocessGaussPointDataToNodes(gp_strain_data, row_nodal_data, gauss_integration_data);
       Core::LinAlg::export_to(row_nodal_data, *eval_data().get_strain_data_node_postprocessed());
 
       PostprocessGaussPointDataToElementCenter(
