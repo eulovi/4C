@@ -6130,16 +6130,12 @@ Core::FE::IntegrationPoints3D::IntegrationPoints3D(const GaussRule3D intrule) : 
 
       break;
     }
-    case GaussRule3D::undefined:
-    {
-      break;
-    }
 
     default:
       FOUR_C_THROW("unknown 3D integration rule");
       break;
   }
-  // FOUR_C_ASSERT(max_nquad >= nquad, "increase size of double array in IntegrationPoints class");
+  FOUR_C_ASSERT(max_nquad >= nquad, "increase size of double array in IntegrationPoints class");
 }
 
 

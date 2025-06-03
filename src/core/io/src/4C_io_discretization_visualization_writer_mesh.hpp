@@ -49,7 +49,8 @@ namespace Core::IO
         const std::shared_ptr<const Core::FE::Discretization>& discretization,
         VisualizationParameters parameters,
         std::function<bool(const Core::Elements::Element* element)> element_filter =
-            [](const Core::Elements::Element*) { return true; });
+            [](const Core::Elements::Element*) { return true; },
+        std::string base_output_name = "");
 
     /**
      * @brief Reset state depending if the maps changed or not

@@ -7,11 +7,13 @@
 
 #include "4C_structure_new_model_evaluator_contact.hpp"
 
+#include "4C_beam3_base.hpp"
 #include "4C_contact_lagrange_strategy_poro.hpp"
 #include "4C_contact_strategy_factory.hpp"
 #include "4C_global_data.hpp"
 #include "4C_io.hpp"
 #include "4C_io_control.hpp"
+#include "4C_io_discretization_visualization_writer_mesh.hpp"
 #include "4C_linalg_utils_sparse_algebra_assemble.hpp"
 #include "4C_linalg_utils_sparse_algebra_manipulation.hpp"
 #include "4C_solver_nonlin_nox_group.hpp"
@@ -87,6 +89,23 @@ void Solid::ModelEvaluator::Contact::setup()
   check_pseudo2d();
 
   post_setup(cparams);
+
+  // Initialize vtu_writer_ptr
+  const auto discretization = std::dynamic_pointer_cast<const Core::FE::Discretization>(
+      const_cast<Solid::ModelEvaluator::Contact*>(this)->discret_ptr());
+  auto visualization_params_ = Core::IO::visualization_parameters_factory(
+      Global::Problem::instance()->io_params().sublist("RUNTIME VTK OUTPUT"),
+      *Global::Problem::instance()->output_control_file(), global_state().get_time_n());
+
+  vtu_writer_ptr_ = std::make_shared<Core::IO::DiscretizationVisualizationWriterMesh>(
+      discretization, visualization_params_,
+      [](const Core::Elements::Element* element)
+      {
+        // Skip beam elements which live in the same discretization but use a different output
+        // mechanism
+        return !dynamic_cast<const Discret::Elements::Beam3Base*>(element);
+      },
+      "contact_output");
 
   issetup_ = true;
 }
@@ -716,7 +735,41 @@ void Solid::ModelEvaluator::Contact::extend_lagrange_multiplier_domain(
 void Solid::ModelEvaluator::Contact::post_output()
 {
   check_init_setup();
-  // empty
+
+  std::cout << "Running post output from contact" << std::endl;
+
+  // reset time and time step of the writer object
+  vtu_writer_ptr_->reset();
+
+  // export to problem dof row map
+  std::shared_ptr<const Core::LinAlg::Map> problemdofs = strategy().problem_dofs();
+
+  std::shared_ptr<const Core::LinAlg::Vector<double>> normalstresses =
+      strategy().contact_normal_stress();
+  std::shared_ptr<Core::LinAlg::Vector<double>> normalstressesexp =
+      std::make_shared<Core::LinAlg::Vector<double>>(*problemdofs);
+  Core::LinAlg::export_to(*normalstresses, *normalstressesexp);
+  // std::cout << "Printing contact normal forces per degree of freedom : " << std::endl;
+  // normalstressesexp->print(std::cout);
+
+  std::string name_nodal = "contact_normal_stresses";
+  std::vector<std::optional<std::string>> context(3, name_nodal);
+  vtu_writer_ptr_->append_result_data_vector_with_context(
+      *normalstressesexp, Core::IO::OutputEntity::dof, context);
+
+  // add displacements (might be easier for visualization
+  // std::vector<std::optional<std::string>> context_disp(global_state().get_dim(), "displacement");
+  // vtu_writer_ptr_->append_result_data_vector_with_context(
+  //    *global_state().get_dis_np(), Core::IO::OutputEntity::dof, context_disp);
+
+  // add element gid
+  // vtu_writer_ptr_->append_element_gid("element_gid");
+
+  auto [time, timestep_number] = get_time_and_time_step_index_for_output(
+      visualization_params_, global_state().get_time_n(), global_state().get_step_n());
+
+  // finalize everything and write all required files to filesystem
+  vtu_writer_ptr_->write_to_disk(time, timestep_number);
 }  // post_output()
 
 /*----------------------------------------------------------------------------*

@@ -10,6 +10,7 @@
 
 #include "4C_config.hpp"
 
+#include "4C_io_visualization_parameters.hpp"
 #include "4C_structure_new_enum_lists.hpp"
 #include "4C_structure_new_model_evaluator_generic.hpp"
 
@@ -21,7 +22,10 @@ namespace CONTACT
   class Manager;
   class AbstractStrategy;
 }  // namespace CONTACT
-
+namespace Core::IO
+{
+  class DiscretizationVisualizationWriterMesh;
+}
 namespace Mortar
 {
   class StrategyBase;
@@ -208,6 +212,12 @@ namespace Solid
 
       //! contact strategy
       std::shared_ptr<CONTACT::AbstractStrategy> strategy_ptr_;
+
+      //! visualization parameters
+      Core::IO::VisualizationParameters visualization_params_;
+
+      //! vtu writer
+      std::shared_ptr<Core::IO::DiscretizationVisualizationWriterMesh> vtu_writer_ptr_ = nullptr;
 
     };  // class Contact
   }  // namespace ModelEvaluator

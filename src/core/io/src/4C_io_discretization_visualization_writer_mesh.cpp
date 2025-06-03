@@ -33,12 +33,15 @@ namespace Core::IO
   DiscretizationVisualizationWriterMesh::DiscretizationVisualizationWriterMesh(
       const std::shared_ptr<const Core::FE::Discretization>& discretization,
       VisualizationParameters parameters,
-      std::function<bool(const Core::Elements::Element* element)> element_filter)
-      : discretization_(discretization),
-        visualization_manager_(std::make_shared<VisualizationManager>(
-            std::move(parameters), discretization->get_comm(), discretization->name())),
-        element_filter_(std::move(element_filter))
+      std::function<bool(const Core::Elements::Element* element)> element_filter,
+      std::string base_output_name)
+      : discretization_(discretization), element_filter_(std::move(element_filter))
   {
+    if (base_output_name == "") base_output_name = discretization_->name();
+
+    visualization_manager_ = std::make_shared<VisualizationManager>(
+        std::move(parameters), discretization->get_comm(), base_output_name);
+
     set_geometry_from_discretization();
   }
 

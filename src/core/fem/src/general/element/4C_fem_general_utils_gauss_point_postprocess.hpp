@@ -59,8 +59,7 @@ namespace Core::FE
    */
   void extrapolate_gauss_point_quantity_to_nodes(Core::Elements::Element& ele,
       const Core::LinAlg::SerialDenseMatrix& data, const Core::FE::Discretization& dis,
-      Core::LinAlg::MultiVector<double>& nodal_data,
-      const Core::FE::GaussIntegration* gauss_integration = nullptr);
+      Core::LinAlg::MultiVector<double>& nodal_data);
 
   /*!
    * @brief Averaging of all Gauss point quantities in @data within the element @ele and assembly to
