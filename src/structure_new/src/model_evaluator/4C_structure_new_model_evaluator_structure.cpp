@@ -1050,9 +1050,9 @@ void Solid::ModelEvaluator::Structure::output_runtime_structure_postprocess_stre
       discret_ptr()->evaluate(
           [&](Core::Elements::Element& ele)
           {
-            if (DoPostprocessingOnElement(ele))
-              Core::FE::evaluate_gauss_point_quantity_at_element_center(
-                  ele, *map_data.at(ele.id()), assembled_data);
+            //            if (DoPostprocessingOnElement(ele))
+            //              Core::FE::evaluate_gauss_point_quantity_at_element_center(
+            //                  ele, *map_data.at(ele.id()), assembled_data);
           });
     };
 
