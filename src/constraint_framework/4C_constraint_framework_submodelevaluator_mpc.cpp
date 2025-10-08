@@ -181,6 +181,13 @@ void Constraints::SubmodelEvaluator::RveMultiPointConstraintManager::check_input
       get_penalty_parameter_ptr() = constraint_parameter_list.get<double>("PENALTY_PARAM");
       break;
     }
+    case Constraints::EnforcementStrategy::none:
+    {
+      FOUR_C_THROW(
+          "Define a constraint enforcement for the evaluation of periodic boundary conditions for "
+          "RVEs.");
+      break;
+    }
   }
 
   // Conditions definition

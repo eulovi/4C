@@ -10,6 +10,7 @@
 #include "4C_comm_mpi_utils.hpp"
 #include "4C_constraint_framework_embeddedmesh_solid_to_solid_coupling_manager.hpp"
 #include "4C_constraint_framework_embeddedmesh_solid_to_solid_mortar_manager.hpp"
+#include "4C_constraint_framework_embeddedmesh_solid_to_solid_nitsche_manager.hpp"
 #include "4C_constraint_framework_embeddedmesh_solid_to_solid_utils.hpp"
 #include "4C_global_data.hpp"
 #include "4C_io_visualization_manager.hpp"

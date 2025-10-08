@@ -545,6 +545,13 @@ four_c_test(TEST_FILE embeddedmesh_cut_bar_under_torsion_one_element.4C.yaml NP 
 __four_c_test_vtk(BASED_ON ${current} PVD_RESULT_FILE xxx-structure.pvd PVD_REFERENCE_FILE ref/embeddedmesh_cut_bar_under_torsion_one_element-structure.pvd TOLERANCE 1e-06)
 four_c_test(TEST_FILE embeddedmesh_cut_integrate_bar_hex8_ele_1.4C.yaml NP 1 REQUIRED_DEPENDENCIES Qhull RETURN_AS current)
 __four_c_test_vtk(BASED_ON ${current} PVD_RESULT_FILE xxx-structure.pvd PVD_REFERENCE_FILE ref/embeddedmesh_cut_integrate_bar_hex8_ele_1-structure.pvd TOLERANCE 1e-06)
+four_c_test(TEST_FILE embeddedmesh_nitsche_two_elements_nurbs27_hex8.4C.yaml NP 1 REQUIRED_DEPENDENCIES Qhull RETURN_AS current)
+__four_c_test_vtk(BASED_ON ${current} PVD_RESULT_FILE xxx-structure.pvd PVD_REFERENCE_FILE ref/embeddedmesh_nitsche_two_elements_nurbs27_hex8-structure.pvd TOLERANCE 1e-06)
+four_c_test(TEST_FILE embeddedmesh_nitsche_bending_beam_linear_kinem.4C.yaml NP 1 REQUIRED_DEPENDENCIES Qhull RETURN_AS current)
+__four_c_test_vtk(BASED_ON ${current} PVD_RESULT_FILE xxx-structure.pvd PVD_REFERENCE_FILE ref/embeddedmesh_nitsche_bending_beam_linear_kinem-structure.pvd 1e-06)
+four_c_test(TEST_FILE embeddedmesh_nitsche_bending_beam_nonlinear_kinem.4C.yaml NP 1 REQUIRED_DEPENDENCIES Qhull RETURN_AS current)cccccbkjjnuvcdtkginviru
+__four_c_test_vtk(BASED_ON ${current} PVD_RESULT_FILE xxx-structure.pvd PVD_REFERENCE_FILE ref/embeddedmesh_nitsche_bending_beam_nonlinear_kinem-structurethgcdricrnjutiuthtckg
+.pvd 1e-06)
 four_c_test(TEST_FILE embeddedmesh_patch_test_block_with_circular_interface.4C.yaml NP 1 REQUIRED_DEPENDENCIES Qhull RETURN_AS current)
 __four_c_test_vtk(BASED_ON ${current} PVD_RESULT_FILE xxx-structure.pvd PVD_REFERENCE_FILE ref/embeddedmesh_patch_test_block_with_circular_interface-structure.pvd TOLERANCE 1e-6)
 __four_c_test_vtk(BASED_ON ${current} PVD_RESULT_FILE xxx-embedded_mesh_lagrange_multipliers.pvd PVD_REFERENCE_FILE ref/embeddedmesh_patch_test_block_with_circular_interface-embedded_mesh_lagrange_multipliers.pvd TOLERANCE 1e-06)
