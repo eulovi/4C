@@ -68,6 +68,28 @@ void get_mortar_parameters(
   embedded_mesh_coupling_params.mortar_shape_function_ = embedded_mesh_mortar_shape_function;
 }
 
+void get_nitsche_parameters(
+    Constraints::EmbeddedMesh::EmbeddedMeshParams& embedded_mesh_coupling_params,
+    Teuchos::ParameterList& constraint_parameter_list,
+    const Teuchos::ParameterList& embedded_mesh_parameter_list)
+{
+  auto embedded_mesh_coupling_strategy =
+      Teuchos::getIntegralValue<Constraints::EmbeddedMesh::CouplingStrategy>(
+          embedded_mesh_parameter_list, "COUPLING_STRATEGY");
+
+  auto embedded_mesh_nitsche_stabilization_param =
+      embedded_mesh_parameter_list.get<double>("NITSCHE_STABILIZATION_PARAM");
+
+  auto embedded_mesh_nitsche_weighting_param =
+      embedded_mesh_parameter_list.get<double>("NITSCHE_WEIGHTING_PARAM");
+
+  embedded_mesh_coupling_params.coupling_strategy_ = embedded_mesh_coupling_strategy;
+  embedded_mesh_coupling_params.nitsche_stabilization_param_ =
+      embedded_mesh_nitsche_stabilization_param;
+  embedded_mesh_coupling_params.nitsche_average_weight_param_ =
+      embedded_mesh_nitsche_weighting_param;
+}
+
 void get_coupling_parameters(
     Constraints::EmbeddedMesh::EmbeddedMeshParams& embedded_mesh_coupling_params,
     Teuchos::ParameterList& constraint_parameter_list,
@@ -79,6 +101,12 @@ void get_coupling_parameters(
     case Constraints::EmbeddedMesh::CouplingStrategy::mortar:
     {
       get_mortar_parameters(
+          embedded_mesh_coupling_params, constraint_parameter_list, embedded_mesh_parameter_list);
+      break;
+    }
+    case Constraints::EmbeddedMesh::CouplingStrategy::nitsche:
+    {
+      get_nitsche_parameters(
           embedded_mesh_coupling_params, constraint_parameter_list, embedded_mesh_parameter_list);
       break;
     }
@@ -137,6 +165,11 @@ Constraints::SubmodelEvaluator::EmbeddedMeshConstraintManager::get_coupling_mana
       return std::make_shared<Constraints::EmbeddedMesh::SolidToSolidMortarManager>(discret_ptr,
           displacement_np, embedded_mesh_coupling_params, visualization_manager,
           discret_ptr->dof_row_map()->max_all_gid() + 1);
+    }
+    case Constraints::EmbeddedMesh::CouplingStrategy::nitsche:
+    {
+      return std::make_shared<Constraints::EmbeddedMesh::SolidToSolidNitscheManager>(
+          discret_ptr, displacement_np, embedded_mesh_coupling_params, visualization_manager);
     }
     default:
       FOUR_C_THROW("Coupling manager not implemented for this coupling strategy");

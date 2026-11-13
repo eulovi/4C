@@ -219,17 +219,6 @@ namespace Discret::Elements
     element_nodes.current_coordinates = element_nodes.reference_coordinates;
     element_nodes.current_coordinates.update(1.0, element_nodes.displacements, 1.0);
 
-    if constexpr (Core::FE::is_nurbs<celltype>)
-    {
-      FOUR_C_ASSERT(discret != nullptr, "For NURBS elements, the discretization must be given.");
-
-      // Obtain the information required for a NURBS element
-      bool zero_size = Core::FE::Nurbs::get_my_nurbs_knots_and_weights(
-          *discret, &ele, element_nodes.knots, element_nodes.weights);
-      if (zero_size)
-        FOUR_C_THROW("get_my_nurbs_knots_and_weights has to return a non zero size NURBS element.");
-    }
-
     return element_nodes;
   }
 

@@ -21,7 +21,6 @@ FOUR_C_NAMESPACE_OPEN
 namespace Constraints::EmbeddedMesh
 {
   class SolidToSolidNitscheManager;
-  class SolidToSolidNitscheManager;
 
   template <typename Interface, typename ParentInterface, typename Background>
   class SurfaceToBackgroundCouplingPairNitsche : public SolidInteractionPair
@@ -68,12 +67,12 @@ namespace Constraints::EmbeddedMesh
 
     void evaluate_and_assemble_nitsche_contributions(const Core::FE::Discretization& discret,
         const Constraints::EmbeddedMesh::SolidToSolidNitscheManager* nitsche_manager,
-        Core::LinAlg::SparseMatrix& global_penalty_boundarylayer,
+        Core::LinAlg::SparseMatrix& global_penalty_interface,
         Core::LinAlg::SparseMatrix& global_penalty_background,
-        Core::LinAlg::SparseMatrix& global_penalty_boundarylayer_background,
-        Core::LinAlg::SparseMatrix& global_nitsche_interface,
+        Core::LinAlg::SparseMatrix& global_penalty_interface_background,
+        Core::LinAlg::SparseMatrix& global_nitsche_parent,
         Core::LinAlg::SparseMatrix& global_nitsche_background,
-        Core::LinAlg::SparseMatrix& global_nitsche_interface_background,
+        Core::LinAlg::SparseMatrix& global_nitsche_parent_background,
         Core::LinAlg::FEVector<double>& global_penalty_constraint,
         Core::LinAlg::FEVector<double>& global_nitsche_constraint,
         double& nitsche_average_weight_param) override;
@@ -119,22 +118,14 @@ namespace Constraints::EmbeddedMesh
     \brief Get the Gauss points of element2_ after cut for visualization.
     */
     void get_projected_gauss_rule_in_cut_element(
-        Core::IO::VisualizationData& cut_element_integration_points_visualization_data) override
-    {
-      FOUR_C_THROW(
-          "This function is not implemented for the SurfaceToBackgroundCouplingPairNitsche.");
-    }
+        Core::IO::VisualizationData& cut_element_integration_points_visualization_data) override;
 
     /*!
     \brief Get the Gauss points of element1_ and element2_ for the evaluation of mortar matrices.
     */
     void get_projected_gauss_rule_on_interface(
         Core::IO::VisualizationData& background_integration_points_visualization_data,
-        Core::IO::VisualizationData& interface_integration_points_visualization_data) override
-    {
-      FOUR_C_THROW(
-          "This function is not implemented for the SurfaceToBackgroundCouplingPairNitsche.");
-    }
+        Core::IO::VisualizationData& interface_integration_points_visualization_data) override;
 
     /*!
     \brief Get the Lagrange multiplier field evaluated on the interface nodes for visualization.
@@ -153,10 +144,10 @@ namespace Constraints::EmbeddedMesh
     Core::Elements::Element& parent_element_1() const { return *parent_element1_; };
 
     //! Kinematics of parent element
-    Inpar::Solid::KinemType parent_element1_kinem_;
+    FourC::Solid::KinemType parent_element1_kinem_;
 
     //! Kinematics of background element
-    Inpar::Solid::KinemType element2_kinem_;
+    FourC::Solid::KinemType element2_kinem_;
 
     //! Pointer to the parent element of element_1()
     Core::Elements::Element* parent_element1_ = nullptr;

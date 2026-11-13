@@ -602,7 +602,7 @@ Discret::Elements::SolidEleCalc<celltype, ElementFormulation>::get_normal_cauchy
   }
   else
   {
-    ElementNodes<celltype> element_nodes = evaluate_element_nodes<celltype>(ele, disp, discret);
+    ElementNodes<celltype> element_nodes = evaluate_element_nodes<celltype>(*discret, ele, disp);
 
     const ShapeFunctionsAndDerivatives<celltype> shape_functions =
         evaluate_shape_functions_and_derivs<celltype>(xi, element_nodes);

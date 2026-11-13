@@ -105,7 +105,7 @@ void Constraints::EmbeddedMesh::prepare_and_perform_cut(std::shared_ptr<Cut::Cut
 template <typename Pointtype>
 void Constraints::EmbeddedMesh::map_from_parametric_to_physical_space(
     GeometryPair::ElementData<Pointtype, double> element_data,
-    Core::LinAlg::Matrix<Pointtype::element_dim_, 1>& point_param_space,
+    const Core::LinAlg::Matrix<Pointtype::element_dim_, 1>& point_param_space,
     Core::LinAlg::Matrix<Pointtype::n_dof_, 1, double> nodal_values,
     Core::LinAlg::Matrix<Pointtype::spatial_dim_, 1, double>& point_physical_space)
 {
@@ -205,7 +205,7 @@ void get_nurbs_information(const Core::Elements::Element& interface_element,
 
   // Get the knots and weights for this element.
   const bool zero_size = Core::FE::Nurbs::get_knot_vector_and_weights_for_nurbs_boundary(
-      &interface_element, face_element->face_master_number(), face_element->parent_element_id(),
+      &interface_element, face_element->face_target_number(), face_element->parent_element_id(),
       *(Global::Problem::instance()->get_dis("structure")), mypknots, myknots, cp_weights,
       normalfac);
   if (zero_size)
@@ -675,7 +675,6 @@ std::vector<int> Constraints::EmbeddedMesh::get_node_ids_parent_elements(
     std::vector<BackgroundInterfaceInfo>& info_background_interface_elements,
     Core::FE::Discretization& discret)
 {
-  // std::cout << "get_node_ids_parent_elements" << std::endl;
   std::set<int> parent_node_set;
 
   // Iterate over the information of the background elements and their corresponding interface
@@ -686,18 +685,11 @@ std::vector<int> Constraints::EmbeddedMesh::get_node_ids_parent_elements(
     for (auto iter_interface_ele : background_interface_info.interface_element_global_ids)
     {
       Core::Elements::Element* parent_element = discret.g_element(iter_interface_ele);
-      // std::cout << "parent element id " << parent_element->id() << std::endl;
 
       for (int i_node = 0; i_node < parent_element->num_node(); i_node++)
       {
         parent_node_ids_temp.push_back(parent_element->node_ids()[i_node]);
       }
-
-      // for (int i_node = 0; i_node < parent_node_ids_temp.size(); i_node++)
-      // {
-      //   std::cout << parent_node_ids_temp[i_node] << ", ";
-      // }
-      // std::cout << std::endl;
 
       parent_node_set.insert(parent_node_ids_temp.begin(), parent_node_ids_temp.end());
     }
@@ -996,6 +988,170 @@ Core::FE::GaussIntegration Constraints::EmbeddedMesh::create_gauss_integration_f
   return Core::FE::GaussIntegration(gp);
 }
 
+template <typename Interface, typename Background>
+void Constraints::EmbeddedMesh::get_projected_gauss_rule_on_interface(
+    const Core::Elements::Element& interface_element,
+    const Core::Elements::Element& background_element,
+    const GeometryPair::ElementData<Interface, double>& interface_ele_pos,
+    const GeometryPair::ElementData<Background, double>& background_ele_pos,
+    Core::IO::VisualizationData& background_integration_points_visualization_data,
+    Core::IO::VisualizationData& interface_integration_points_visualization_data,
+    const std::vector<std::tuple<Core::LinAlg::Matrix<2, 1>, Core::LinAlg::Matrix<3, 1>, double>>&
+        interface_integration_points,
+    int num_gauss_points_boundary_cell)
+{
+  // Get the vectors to be filled related to the background integration rule
+  std::vector<double>& background_point_coordinates =
+      background_integration_points_visualization_data.get_point_coordinates();
+  std::vector<double>& background_weights =
+      background_integration_points_visualization_data.get_point_data<double>("weights");
+  std::vector<int>& background_integration_interface_id =
+      background_integration_points_visualization_data.get_point_data<int>("interface_id");
+  std::vector<int>& background_integration_background_id =
+      background_integration_points_visualization_data.get_point_data<int>("background_id");
+  std::vector<int>& background_integration_boundarycell_id =
+      background_integration_points_visualization_data.get_point_data<int>("boundary_cell_id");
+
+  // Get the vectors to be filled related to the interface integration rule
+  std::vector<double>& interface_point_coordinates =
+      interface_integration_points_visualization_data.get_point_coordinates();
+  std::vector<double>& interface_weights =
+      interface_integration_points_visualization_data.get_point_data<double>("weights");
+  std::vector<int>& interface_integration_interface_id =
+      interface_integration_points_visualization_data.get_point_data<int>("interface_id");
+  std::vector<int>& interface_integration_background_id =
+      interface_integration_points_visualization_data.get_point_data<int>("background_id");
+  std::vector<int>& interface_integration_boundarycell_id =
+      interface_integration_points_visualization_data.get_point_data<int>("boundary_cell_id");
+
+  // The interface_integration_points_ are stored in a sequential order for each boundary cell.
+  // To know from which boundary cell they were generated, we create an id for each boundary cell
+  // generated by counting the gauss points in the following loop.
+  int id_boundary_cell = 0;
+  int gps_count = 0;
+
+  // Start with the loop of the interface gauss points
+  for (size_t it_gp = 0; it_gp < interface_integration_points.size(); it_gp++)
+  {
+    auto& [xi_interface, xi_background, weight] = interface_integration_points[it_gp];
+
+    Core::LinAlg::Matrix<3, 1, double> interface_point_coord(Core::LinAlg::Initialization::zero);
+    Core::LinAlg::Matrix<3, 1, double> background_point_coord(Core::LinAlg::Initialization::zero);
+
+    Constraints::EmbeddedMesh::map_from_parametric_to_physical_space<Interface>(interface_ele_pos,
+        xi_interface, interface_ele_pos.element_position_, interface_point_coord);
+
+    Constraints::EmbeddedMesh::map_from_parametric_to_physical_space<Background>(background_ele_pos,
+        xi_background, background_ele_pos.element_position_, background_point_coord);
+
+    // Do check to see if the physical position of the gauss point of interface
+    // and background are the same
+    Core::LinAlg::Matrix<3, 1, double> vec(Core::LinAlg::Initialization::zero);
+    for (int i_dim = 0; i_dim < 3; ++i_dim)
+      vec(i_dim) = interface_point_coord(i_dim) - background_point_coord(i_dim);
+    double norm2 = vec.norm2();
+
+    if (norm2 > 1e-9)
+    {
+      FOUR_C_THROW(
+          "The physical coordinates of the gauss points of the "
+          "interface and background do not "
+          "coincide. The difference is {}.",
+          norm2);
+    }
+
+    // Write gauss point coordinates of interface
+    for (int i_dim = 0; i_dim < 3; ++i_dim)
+      interface_point_coordinates.push_back(interface_point_coord(i_dim));
+
+    // Write gauss point coordinates of background
+    for (int i_dim = 0; i_dim < 3; ++i_dim)
+      background_point_coordinates.push_back(background_point_coord(i_dim));
+
+    // Write the weight of the gauss point
+    interface_weights.push_back(weight);
+
+    // Write the weight of the gauss point
+    background_weights.push_back(weight);
+
+    // For the obtained Gauss points, write the global ids of the background and the interface
+    // elements they come from and the number of their boundary cell
+    const auto* face_element = dynamic_cast<const Core::Elements::FaceElement*>(&interface_element);
+    if (!face_element) FOUR_C_THROW("Cast to FaceElement failed!");
+
+    background_integration_interface_id.push_back(face_element->parent_element_id());
+    background_integration_background_id.push_back(background_element.id());
+    background_integration_boundarycell_id.push_back(id_boundary_cell);
+
+    interface_integration_interface_id.push_back(face_element->parent_element_id());
+    interface_integration_background_id.push_back(background_element.id());
+    interface_integration_boundarycell_id.push_back(id_boundary_cell);
+
+    // Increase the gauss point count. If it's bigger than the number of gauss
+    // points per boundary cell, increase the boundary cell id.
+    gps_count += 1;
+    if (gps_count == num_gauss_points_boundary_cell)
+    {
+      gps_count = 0;
+      id_boundary_cell += 1;
+    }
+  }
+}
+
+template <typename Background>
+void Constraints::EmbeddedMesh::get_projected_gauss_rule_in_cut_element(
+    Core::Elements::Element& background_element,
+    const GeometryPair::ElementData<Background, double>& background_element_pos,
+    Cut::CutWizard& cutwizard,
+    Core::IO::VisualizationData& cut_element_integration_points_visualization_data)
+{
+  // Get the vectors to be filled related to the integration of cut elements
+  std::vector<double>& cutelement_point_coordinates =
+      cut_element_integration_points_visualization_data.get_point_coordinates();
+  std::vector<double>& cutelement_weights =
+      cut_element_integration_points_visualization_data.get_point_data<double>("weights");
+  std::vector<int>& cutelement_integration_cell_id =
+      cut_element_integration_points_visualization_data.get_point_data<int>("integration_cell_id");
+
+  // Get the gauss rule of the background cut element
+  std::vector<Core::FE::GaussIntegration> gp_intpoints_cut;
+
+  Cut::ElementHandle* element_handle = cutwizard.get_element(&background_element);
+
+  element_handle->get_gauss_rule_integration_cells(
+      gp_intpoints_cut, cutwizard.do_inside_cells_have_physical_meaning());
+
+  for (auto& iter : gp_intpoints_cut)
+  {
+    for (Core::FE::GaussIntegration::iterator gp = iter.begin(); gp != iter.end(); ++gp)
+    {
+      Core::LinAlg::Matrix<3, 1> gp_projected_cutelement;
+
+      gp_projected_cutelement(0, 0) = gp.point()[0];
+      gp_projected_cutelement(1, 0) = gp.point()[1];
+      gp_projected_cutelement(2, 0) = gp.point()[2];
+
+      Core::LinAlg::Matrix<3, 1, double> point_coord(Core::LinAlg::Initialization::zero);
+
+      Constraints::EmbeddedMesh::map_from_parametric_to_physical_space<Background>(
+          background_element_pos, gp_projected_cutelement, background_element_pos.element_position_,
+          point_coord);
+
+      // Write gauss point coordinates
+      for (int i_dim = 0; i_dim < 3; ++i_dim)
+        cutelement_point_coordinates.push_back(point_coord(i_dim));
+
+      // Write the weight of the gauss point
+      cutelement_weights.push_back(gp.weight());
+
+      // Write an id() for this point for the background and the interface gauss points
+      int id = background_element.id();
+      cutelement_integration_cell_id.push_back(id);
+    }
+  }
+}
+
+
 Constraints::EmbeddedMesh::SolidToSolidMortarShapefunctions
 Constraints::EmbeddedMesh::define_shape_functions_lagrange_multipliers(Core::FE::CellType celltype)
 {
@@ -1052,12 +1208,12 @@ namespace Constraints::EmbeddedMesh
   initialize_template_template_project_boundary_cell_gauss_rule_on_interface(
       t_nurbs9, Core::FE::CellType::tri3);
 
-#define initialize_template_map_from_parametric_to_physical_space(Pointtype) \
-  template void map_from_parametric_to_physical_space<Pointtype>(            \
-      GeometryPair::ElementData<Pointtype, double> element_data,             \
-      Core::LinAlg::Matrix<Pointtype::element_dim_, 1> & point_param_space,  \
-      Core::LinAlg::Matrix<Pointtype::n_dof_, 1, double> nodal_values,       \
-      Core::LinAlg::Matrix<Pointtype::spatial_dim_, 1, double> & point_physical_space)
+#define initialize_template_map_from_parametric_to_physical_space(Pointtype)     \
+  template void map_from_parametric_to_physical_space<Pointtype>(                \
+      GeometryPair::ElementData<Pointtype, double> element_data,                 \
+      const Core::LinAlg::Matrix<Pointtype::element_dim_, 1>& point_param_space, \
+      Core::LinAlg::Matrix<Pointtype::n_dof_, 1, double> nodal_values,           \
+      Core::LinAlg::Matrix<Pointtype::spatial_dim_, 1, double>& point_physical_space)
 
   initialize_template_map_from_parametric_to_physical_space(t_quad4);
   initialize_template_map_from_parametric_to_physical_space(t_nurbs9);
@@ -1108,6 +1264,32 @@ namespace Constraints::EmbeddedMesh
 
   initialize_template_calculate_determinant_interface_element_current_conf(t_quad4);
   initialize_template_calculate_determinant_interface_element_current_conf(t_nurbs9);
+
+#define initialize_template_get_projected_gauss_rule_in_cut_element(Background)               \
+  template void get_projected_gauss_rule_in_cut_element<Background>(Core::Elements::Element&, \
+      const GeometryPair::ElementData<Background, double>&, Cut::CutWizard&,                  \
+      Core::IO::VisualizationData&);
+
+  initialize_template_get_projected_gauss_rule_in_cut_element(t_hex8);
+  initialize_template_get_projected_gauss_rule_in_cut_element(t_nurbs27);
+  initialize_template_get_projected_gauss_rule_in_cut_element(t_wedge6);
+
+#define initialize_template_get_projected_gauss_rule_on_interface(Interface, Background)  \
+  template void get_projected_gauss_rule_on_interface<Interface, Background>(             \
+      const Core::Elements::Element&, const Core::Elements::Element&,                     \
+      const GeometryPair::ElementData<Interface, double>&,                                \
+      const GeometryPair::ElementData<Background, double>&, Core::IO::VisualizationData&, \
+      Core::IO::VisualizationData&,                                                       \
+      const std::vector<                                                                  \
+          std::tuple<Core::LinAlg::Matrix<2, 1>, Core::LinAlg::Matrix<3, 1>, double>>&,   \
+      int);
+
+  initialize_template_get_projected_gauss_rule_on_interface(t_quad4, t_hex8);
+  initialize_template_get_projected_gauss_rule_on_interface(t_quad4, t_nurbs27);
+  initialize_template_get_projected_gauss_rule_on_interface(t_nurbs9, t_hex8);
+  initialize_template_get_projected_gauss_rule_on_interface(t_nurbs9, t_nurbs27);
+  initialize_template_get_projected_gauss_rule_on_interface(t_nurbs9, t_wedge6);
+
 }  // namespace Constraints::EmbeddedMesh
 
 FOUR_C_NAMESPACE_CLOSE

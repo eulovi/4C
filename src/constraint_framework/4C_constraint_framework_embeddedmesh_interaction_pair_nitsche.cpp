@@ -18,8 +18,8 @@
 #include "4C_geometry_pair_element_evaluation_functions.hpp"
 #include "4C_geometry_pair_line_to_surface.hpp"
 #include "4C_geometry_pair_line_to_volume.hpp"
-#include "4C_solid_3D_ele.hpp"
-#include "4C_solid_3D_ele_calc_lib_nitsche.hpp"
+#include "4C_solid_ele.hpp"
+#include "4C_solid_ele_calc_lib_nitsche.hpp"
 
 FOUR_C_NAMESPACE_OPEN
 
@@ -42,13 +42,13 @@ Constraints::EmbeddedMesh::SurfaceToBackgroundCouplingPairNitsche<Interface, Par
   parent_element1_ = (face_element->parent_element());
 
   // Get kinematics of parent and background elements
-  auto* parent_solid_ele = dynamic_cast<Discret::Elements::Solid*>(&this->parent_element_1());
+  auto* parent_solid_ele = dynamic_cast<Discret::Elements::Solid<3>*>(&this->parent_element_1());
   if (!parent_solid_ele)
     FOUR_C_THROW(
         "This implementation of the embedded mesh method only works for new solid elements.");
   parent_element1_kinem_ = parent_solid_ele->kinematic_type();
 
-  auto* background_solid_ele = dynamic_cast<Discret::Elements::Solid*>(&this->element_2());
+  auto* background_solid_ele = dynamic_cast<Discret::Elements::Solid<3>*>(&this->element_2());
   if (!background_solid_ele)
     FOUR_C_THROW(
         "This implementation of the embedded mesh method only works for new solid elements.");
@@ -316,7 +316,7 @@ struct LinearizationDependencies
 template <Core::FE::CellType celltype>
 QuantitiesDomainEvaluatedAtXi<celltype> evaluate_domain_quantities_at_xi(
     const Core::FE::Discretization& discret, const Core::Elements::Element& element,
-    Inpar::Solid::KinemType ele_kinem_type,
+    FourC::Solid::KinemType ele_kinem_type,
     const Core::LinAlg::Matrix<Core::FE::num_nodes(celltype), 3, double> initial_position_ele,
     const std::vector<double>& ele_displacement, Core::LinAlg::Matrix<3, 1>& xi,
     Core::LinAlg::Matrix<Core::FE::dim<celltype>, Core::FE::num_nodes(celltype), double> dxi_N)
@@ -325,7 +325,7 @@ QuantitiesDomainEvaluatedAtXi<celltype> evaluate_domain_quantities_at_xi(
       Core::LinAlg::reinterpret_as_tensor<Core::FE::dim<celltype>>(xi);
 
   const Discret::Elements::ElementNodes<celltype> element_nodes =
-      Discret::Elements::evaluate_element_nodes<celltype>(element, ele_displacement, &discret);
+      Discret::Elements::evaluate_element_nodes<celltype>(discret, element, ele_displacement);
 
   const Discret::Elements::ShapeFunctionsAndDerivatives<celltype> shape_functions =
       Discret::Elements::evaluate_shape_functions_and_derivs<celltype>(xi_tensor, element_nodes);
@@ -343,12 +343,12 @@ QuantitiesDomainEvaluatedAtXi<celltype> evaluate_domain_quantities_at_xi(
   const Core::LinAlg::SymmetricTensor<double, Core::FE::dim<celltype>, Core::FE::dim<celltype>>
       strain = [&]()
   {
-    if (ele_kinem_type == Inpar::Solid::KinemType::linear)
+    if (ele_kinem_type == FourC::Solid::KinemType::linear)
     {
       return Discret::Elements::evaluate_linear_gl_strain(
           element_nodes, Discret::Elements::evaluate_linear_strain_gradient(jacobian_mapping));
     }
-    else if (ele_kinem_type == Inpar::Solid::KinemType::nonlinearTotLag)
+    else if (ele_kinem_type == FourC::Solid::KinemType::nonlinearTotLag)
     {
       const Core::LinAlg::SymmetricTensor<double, Core::FE::dim<celltype>, Core::FE::dim<celltype>>
           cauchygreen = evaluate_cauchy_green(spatial_material_mapping);
@@ -362,21 +362,22 @@ QuantitiesDomainEvaluatedAtXi<celltype> evaluate_domain_quantities_at_xi(
     }
   }();
 
-  auto* solid_ele = dynamic_cast<const Discret::Elements::Solid*>(&element);
+  auto* solid_ele = dynamic_cast<const Discret::Elements::Solid<3>*>(&element);
   if (!solid_ele) FOUR_C_THROW("Cast to Discret::Elements::Solid failed!");
 
   // Setting a parameter list (I think this is actually not used in the evaluate_material_stress
   // function, therefore I have it empty)
   Teuchos::ParameterList params;
-  Mat::EvaluationContext context{.total_time = nullptr,  // Do not have the time here
-      .time_step_size = nullptr,                         // Do not have the time-step here
+  Mat::EvaluationContext<3> context{.total_time = nullptr,  // Do not have the time here
+      .time_step_size = nullptr,                            // Do not have the time-step here
       .xi = &xi_tensor,
       .ref_coords = nullptr};
   // Setting the number of Gauss point (gp) to zero (this is later used for a warning, but not
   // relevant for calculations)
   const int gp = 0;
+  Discret::Elements::ElementProperties<celltype> element_properties;
   auto pk2 = Discret::Elements::evaluate_material_stress<celltype>(*(solid_ele->solid_material()),
-      deformation_gradient, strain, params, context, gp, element.id());
+      element_properties, deformation_gradient, strain, params, context, gp, element.id());
 
   // Calculate the 1st Piola-Kirchhoff stresses
   Core::LinAlg::Matrix<3, 3> def_gradient = Core::LinAlg::make_matrix_view(deformation_gradient);
@@ -419,7 +420,7 @@ template <Core::FE::CellType celltype>
 std::tuple<Core::LinAlg::Matrix<3, 3>, LinearizationDependencies<celltype>>
 evaluate_variation_first_pk_at_node_dir(unsigned int& num_node, unsigned int& n_dir,
     QuantitiesDomainEvaluatedAtXi<celltype>& quantities_domain_at_xi,
-    Inpar::Solid::KinemType kinem_type)
+    FourC::Solid::KinemType kinem_type)
 {
   LinearizationDependencies<celltype> linearization_dependencies;
 
@@ -431,7 +432,7 @@ evaluate_variation_first_pk_at_node_dir(unsigned int& num_node, unsigned int& n_
 
   // Get the variation of the Green-Lagrange strains at a node and direction
   Core::LinAlg::Matrix<3, 3> d_strain(Core::LinAlg::Initialization::zero);
-  if (kinem_type == Inpar::Solid::KinemType::linear)
+  if (kinem_type == FourC::Solid::KinemType::linear)
   {
     // Evaluate the derivative of the linear strain
     for (int i_dim = 0; i_dim < Core::FE::dim<celltype>; ++i_dim)
@@ -440,7 +441,7 @@ evaluate_variation_first_pk_at_node_dir(unsigned int& num_node, unsigned int& n_
       d_strain(i_dim, n_dir) += 0.5 * quantities_domain_at_xi.N_XYZ_(i_dim, num_node);
     }
   }
-  else if (kinem_type == Inpar::Solid::KinemType::nonlinearTotLag)
+  else if (kinem_type == FourC::Solid::KinemType::nonlinearTotLag)
   {
     // Evaluate the derivative of the Green-Lagrange strain
     Core::LinAlg::Matrix<3, 3> d_defgradT_defgrad(Core::LinAlg::Initialization::zero);
@@ -608,21 +609,23 @@ void Constraints::EmbeddedMesh::SurfaceToBackgroundCouplingPairNitsche<Interface
   Core::LinAlg::Matrix<Interface::n_nodes_, 3, double> nodal_initpos_interface(
       Core::LinAlg::Initialization::zero);
   for (int i_dim = 0; i_dim < 3; i_dim++)
-    for (int i_interface_node = 0; i_interface_node < Interface::n_nodes_; i_interface_node++)
+    for (unsigned int i_interface_node = 0; i_interface_node < Interface::n_nodes_;
+        i_interface_node++)
       nodal_initpos_interface(i_interface_node, i_dim) =
           ele1pos_.element_position_(i_dim + 3 * i_interface_node);
 
   Core::LinAlg::Matrix<ParentInterface::n_nodes_, 3, double> nodal_initpos_parent(
       Core::LinAlg::Initialization::zero);
   for (int i_dim = 0; i_dim < 3; i_dim++)
-    for (int i_parent_node = 0; i_parent_node < ParentInterface::n_nodes_; i_parent_node++)
+    for (unsigned int i_parent_node = 0; i_parent_node < ParentInterface::n_nodes_; i_parent_node++)
       nodal_initpos_parent(i_parent_node, i_dim) =
           ele1parentpos_.element_position_(i_dim + 3 * i_parent_node);
 
   Core::LinAlg::Matrix<Background::n_nodes_, 3, double> nodal_initpos_background(
       Core::LinAlg::Initialization::zero);
   for (int i_dim = 0; i_dim < 3; i_dim++)
-    for (int i_background_node = 0; i_background_node < Background::n_nodes_; i_background_node++)
+    for (unsigned int i_background_node = 0; i_background_node < Background::n_nodes_;
+        i_background_node++)
       nodal_initpos_background(i_background_node, i_dim) =
           ele2pos_.element_position_(i_dim + 3 * i_background_node);
 
@@ -737,7 +740,7 @@ void Constraints::EmbeddedMesh::SurfaceToBackgroundCouplingPairNitsche<Interface
 
     std::unordered_map<int, int> interface_solid_index;
     interface_solid_index.reserve(id_nodes_parent_ele.size());
-    for (int i = 0; i < id_nodes_parent_ele.size(); ++i)
+    for (long unsigned int i = 0; i < id_nodes_parent_ele.size(); ++i)
       interface_solid_index[id_nodes_parent_ele[i]] = i;
 
     std::vector<int> id_nodes_face_ele;
@@ -1076,6 +1079,29 @@ void Constraints::EmbeddedMesh::SurfaceToBackgroundCouplingPairNitsche<Interface
           local_stiffness_penalty_interface_background(i_interface, i_background) *
           this->ele1dis_.element_position_(i_interface);
   }
+}
+
+template <typename Interface, typename ParentInterface, typename Background>
+void Constraints::EmbeddedMesh::SurfaceToBackgroundCouplingPairNitsche<Interface, ParentInterface,
+    Background>::
+    get_projected_gauss_rule_on_interface(
+        Core::IO::VisualizationData& background_integration_points_visualization_data,
+        Core::IO::VisualizationData& interface_integration_points_visualization_data)
+{
+  Constraints::EmbeddedMesh::get_projected_gauss_rule_on_interface<Interface, Background>(
+      element_1(), element_2(), ele1pos_, ele2pos_,
+      background_integration_points_visualization_data,
+      interface_integration_points_visualization_data, interface_integration_points_,
+      num_gauss_points_boundary_cell_);
+}
+
+template <typename Interface, typename ParentInterface, typename Background>
+void Constraints::EmbeddedMesh::SurfaceToBackgroundCouplingPairNitsche<Interface, ParentInterface,
+    Background>::get_projected_gauss_rule_in_cut_element(Core::IO::VisualizationData&
+        cut_element_integration_points_visualization_data)
+{
+  Constraints::EmbeddedMesh::get_projected_gauss_rule_in_cut_element<Background>(element_2(),
+      this->ele2pos_, *get_cutwizard(), cut_element_integration_points_visualization_data);
 }
 
 /**

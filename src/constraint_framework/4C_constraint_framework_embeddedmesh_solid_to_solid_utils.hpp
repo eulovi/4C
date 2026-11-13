@@ -15,6 +15,7 @@
 #include "4C_fem_general_utils_gausspoints.hpp"
 #include "4C_geometry_pair_element.hpp"
 #include "4C_geometry_pair_line_to_surface.hpp"
+#include "4C_io_visualization_data.hpp"
 #include "4C_linalg_fevector.hpp"
 
 #include <memory>
@@ -186,9 +187,9 @@ namespace Constraints::EmbeddedMesh
       const Core::FE::Discretization& discret, Core::LinAlg::SparseMatrix& global_penalty_interface,
       Core::LinAlg::SparseMatrix& global_penalty_background,
       Core::LinAlg::SparseMatrix& global_penalty_interface_background,
-      Core::LinAlg::SparseMatrix& global_nitsche_interface,
+      Core::LinAlg::SparseMatrix& global_nitsche_parent,
       Core::LinAlg::SparseMatrix& global_nitsche_background,
-      Core::LinAlg::SparseMatrix& global_nitsche_interface_background,
+      Core::LinAlg::SparseMatrix& global_nitsche_parent_background,
       Core::LinAlg::FEVector<double>& global_penalty_constraint,
       Core::LinAlg::FEVector<double>& global_nitsche_constraint,
       const Core::LinAlg::Matrix<Interface::n_dof_, Interface::n_dof_, double>&
@@ -299,7 +300,7 @@ namespace Constraints::EmbeddedMesh
   template <typename Pointtype>
   void map_from_parametric_to_physical_space(
       GeometryPair::ElementData<Pointtype, double> element_data,
-      Core::LinAlg::Matrix<Pointtype::element_dim_, 1>& point_param_space,
+      const Core::LinAlg::Matrix<Pointtype::element_dim_, 1>& point_param_space,
       Core::LinAlg::Matrix<Pointtype::n_dof_, 1, double> nodal_values,
       Core::LinAlg::Matrix<Pointtype::spatial_dim_, 1, double>& point_physical_space);
 
@@ -383,6 +384,23 @@ namespace Constraints::EmbeddedMesh
    */
   SolidToSolidMortarShapefunctions define_shape_functions_lagrange_multipliers(
       Core::FE::CellType celltype);
+
+  template <typename Interface, typename Background>
+  void get_projected_gauss_rule_on_interface(const Core::Elements::Element& interface_element,
+      const Core::Elements::Element& background_element,
+      const GeometryPair::ElementData<Interface, double>& interface_ele_pos,
+      const GeometryPair::ElementData<Background, double>& background_ele_pos,
+      Core::IO::VisualizationData& background_integration_points_visualization_data,
+      Core::IO::VisualizationData& interface_integration_points_visualization_data,
+      const std::vector<std::tuple<Core::LinAlg::Matrix<2, 1>, Core::LinAlg::Matrix<3, 1>, double>>&
+          interface_integration_points,
+      int num_gauss_points_boundary_cell);
+
+  template <typename Background>
+  void get_projected_gauss_rule_in_cut_element(Core::Elements::Element& background_element,
+      const GeometryPair::ElementData<Background, double>& background_element_pos,
+      Cut::CutWizard& cutwizard,
+      Core::IO::VisualizationData& cut_element_integration_points_visualization_data);
 
 }  // namespace Constraints::EmbeddedMesh
 

@@ -48,17 +48,6 @@ std::vector<Core::IO::InputSpec> Constraints::valid_parameters()
                               "Mortar/Lagrange  Multiplier method ",
                   .default_value = EmbeddedMesh::SolidToSolidMortarShapefunctions::undefined}),
 
-          parameter<EmbeddedMesh::NitscheWeightingType>("NITSCHE_WEIGHTING_TYPE",
-              {.description = "Type of weighting that should be used for averaging quantities "
-                              "using the Nitsche method. ",
-                  .default_value = EmbeddedMesh::NitscheWeightingType::undefined}),
-
-          parameter<double>("NITSCHE_SCALAR_FACTOR_FOR_STABILIZATION_PARAM",
-              {.description =
-                      "Value of the stabilization parameter for coupling based on the "
-                      "Nitsche method for cases where the NITSCHE_WEIGHTING_TYPE is not undefined.",
-                  .default_value = 1.0}),
-
           parameter<double>("NITSCHE_STABILIZATION_PARAM",
               {.description = "Value of the stabilization parameter for coupling based on the "
                               "Nitsche method in case the Nitsche weighting method is undefined",

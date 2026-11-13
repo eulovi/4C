@@ -15,7 +15,7 @@
 #include "4C_io_visualization_data.hpp"
 #include "4C_linalg_fevector.hpp"
 #include "4C_linalg_fixedsizematrix.hpp"
-#include "4C_solid_3D_ele.hpp"
+#include "4C_solid_ele.hpp"
 #include "4C_utils_parameter_list.fwd.hpp"
 
 #include <memory>
@@ -134,9 +134,9 @@ namespace Constraints::EmbeddedMesh
         Core::LinAlg::SparseMatrix& global_penalty_interface,
         Core::LinAlg::SparseMatrix& global_penalty_background,
         Core::LinAlg::SparseMatrix& global_penalty_interface_background,
-        Core::LinAlg::SparseMatrix& global_nitsche_interface,
+        Core::LinAlg::SparseMatrix& global_nitsche_parent,
         Core::LinAlg::SparseMatrix& global_nitsche_background,
-        Core::LinAlg::SparseMatrix& global_nitsche_interface_background,
+        Core::LinAlg::SparseMatrix& global_nitsche_parent_background,
         Core::LinAlg::FEVector<double>& global_penalty_constraint,
         Core::LinAlg::FEVector<double>& global_nitsche_constraint,
         double& nitsche_average_weight_param) = 0;

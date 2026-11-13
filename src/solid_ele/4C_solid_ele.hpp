@@ -223,7 +223,7 @@ namespace Discret::Elements
         const std::function<void(Mat::So3Material&, double integration_factor, int gp)>& integrator)
         const;
 
-    Inpar::Solid::KinemType kinematic_type() { return solid_ele_property_.kintype; }
+    FourC::Solid::KinemType kinematic_type() { return solid_ele_property_.kintype; }
 
    private:
     //! cell type

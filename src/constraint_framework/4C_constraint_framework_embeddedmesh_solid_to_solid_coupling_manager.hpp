@@ -40,6 +40,7 @@ namespace Solid
 namespace Constraints::EmbeddedMesh
 {
   class SolidInteractionPair;
+  struct BackgroundInterfaceInfo;
 
   class SolidToSolidCouplingManager
   {
@@ -115,13 +116,6 @@ namespace Constraints::EmbeddedMesh
     virtual void set_global_maps() = 0;
 
     /**
-     * \brief This method builds the local maps from the global multi vector created in Setup.
-     *
-     * @param displacement_vector (in) global displacement vector.
-     */
-    virtual void set_local_maps(const Core::LinAlg::Vector<double>& displacement_vector) = 0;
-
-    /**
      * \brief Check if this node is in a cut element
      */
     bool is_cut_node(Core::Nodes::Node const& node);
@@ -130,11 +124,6 @@ namespace Constraints::EmbeddedMesh
      * \brief Throw an error if setup was not called on the object prior to this function call.
      */
     virtual void check_setup() const = 0;
-
-    /**
-     * \brief Throw an error if the local maps were not build.
-     */
-    virtual void check_local_maps() const = 0;
 
     /**
      * \brief Throw an error if the global maps were not build.
@@ -173,6 +162,8 @@ namespace Constraints::EmbeddedMesh
         embedded_mesh_solid_pairs_;
 
     std::shared_ptr<Core::IO::VisualizationManager> visualization_manager_;
+
+    std::vector<BackgroundInterfaceInfo> info_background_interface_elements_;
   };
 }  // namespace Constraints::EmbeddedMesh
 

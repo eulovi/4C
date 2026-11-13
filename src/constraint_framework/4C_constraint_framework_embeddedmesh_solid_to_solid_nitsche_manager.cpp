@@ -13,7 +13,6 @@
 #include "4C_cut_cutwizard.hpp"
 #include "4C_io_visualization_manager.hpp"
 #include "4C_linalg_fevector.hpp"
-#include "4C_linalg_tensor.hpp"
 #include "4C_linalg_utils_sparse_algebra_manipulation.hpp"
 #include "4C_linalg_utils_sparse_algebra_math.hpp"
 #include "4C_linalg_vector.hpp"
@@ -29,74 +28,13 @@ Constraints::EmbeddedMesh::SolidToSolidNitscheManager::SolidToSolidNitscheManage
     const Core::LinAlg::Vector<double>& displacement_vector,
     Constraints::EmbeddedMesh::EmbeddedMeshParams& embedded_mesh_coupling_params,
     std::shared_ptr<Core::IO::VisualizationManager> visualization_manager)
-    : discret_(discret),
-      embedded_mesh_coupling_params_(embedded_mesh_coupling_params),
-      visualization_manager_(visualization_manager)
+    : SolidToSolidCouplingManager(discret, embedded_mesh_coupling_params, visualization_manager)
 {
-  // Initialize cutwizard instance and perform the cut
-  std::shared_ptr<Cut::CutWizard> cutwizard = std::make_shared<Cut::CutWizard>(discret_);
-  Constraints::EmbeddedMesh::prepare_and_perform_cut(
-      cutwizard, discret_, embedded_mesh_coupling_params_);
-
-  // Obtain the information of the background and its related interface elements
-  std::vector<BackgroundInterfaceInfo> info_background_interface_elements =
-      get_information_background_and_interface_elements(
-          *cutwizard, *discret_, ids_cut_elements_col_, cut_elements_col_vector_);
-
-  // std::cout << "info_background_interface_elements " << std::endl;
-  // for (int i = 0; i < info_background_interface_elements.size(); i++)
-  // {
-  //   std::cout << i << " --- background element " <<
-  //   info_background_interface_elements[i].background_element_ptr->id() << std::endl; std::cout <<
-  //   "interface_element_global_ids : "; std::set<int>::iterator itr; for (itr =
-  //   info_background_interface_elements[i].interface_element_global_ids.begin(); itr !=
-  //   info_background_interface_elements[i].interface_element_global_ids.end(); itr++)
-  //     std::cout << *itr << ", ";
-  //   std::cout << std::endl;
-  // }
-
-  // Get the coupling pairs and cut elements
-  get_coupling_pairs_and_background_elements(info_background_interface_elements, cutwizard,
-      embedded_mesh_coupling_params_, *discret_, embedded_mesh_solid_pairs_);
-
-  // Change integration rule of elements if they are cut
-  Constraints::EmbeddedMesh::change_gauss_rule_of_cut_elements(
-      cut_elements_col_vector_, *cutwizard);
-
   // Get the indices of the DOFs related to the parent elements of the interface
   std::vector<int> parent_dofs_temp = Constraints::EmbeddedMesh::get_node_ids_parent_elements(
-      info_background_interface_elements, *discret_);
+      info_background_interface_elements_, *discret_);
   parent_node_ids_.reserve(parent_dofs_temp.size());
   parent_node_ids_.insert(parent_node_ids_.end(), parent_dofs_temp.begin(), parent_dofs_temp.end());
-
-  // std::cout << "parent node ids "<< std::endl;
-  // for (int i = 0; i < parent_node_ids_.size(); i++)
-  //   std::cout << parent_node_ids_[i] << std::endl;
-
-  // Generate visualization manager information
-  visualization_manager_->register_visualization_data("background_integration_points");
-  visualization_manager_->register_visualization_data("interface_integration_points");
-  visualization_manager_->register_visualization_data("cut_element_integration_points");
-
-  auto& background_integration_points_visualization_data =
-      visualization_manager_->get_visualization_data("background_integration_points");
-  background_integration_points_visualization_data.register_point_data<double>("weights", 1);
-  background_integration_points_visualization_data.register_point_data<int>("interface_id", 1);
-  background_integration_points_visualization_data.register_point_data<int>("background_id", 1);
-  background_integration_points_visualization_data.register_point_data<int>("boundary_cell_id", 1);
-
-  auto& interface_integration_points_visualization_data =
-      visualization_manager_->get_visualization_data("interface_integration_points");
-  interface_integration_points_visualization_data.register_point_data<double>("weights", 1);
-  interface_integration_points_visualization_data.register_point_data<int>("interface_id", 1);
-  interface_integration_points_visualization_data.register_point_data<int>("background_id", 1);
-  interface_integration_points_visualization_data.register_point_data<int>("boundary_cell_id", 1);
-
-  auto& cut_element_integration_points_visualization_data =
-      visualization_manager_->get_visualization_data("cut_element_integration_points");
-  cut_element_integration_points_visualization_data.register_point_data<double>("weights", 1);
-  cut_element_integration_points_visualization_data.register_point_data<int>(
-      "integration_cell_id", 1);
 
   // Setup the solid to solid Nitsche manager
   Core::LinAlg::Vector<double> disp_col_vec(*discret_->dof_col_map());
@@ -147,13 +85,6 @@ void Constraints::EmbeddedMesh::SolidToSolidNitscheManager::setup(
 
   // Set current state
   set_state(displacement_vector);
-}
-
-void Constraints::EmbeddedMesh::SolidToSolidNitscheManager::set_state(
-    const Core::LinAlg::Vector<double>& displacement_vector)
-{
-  for (auto couplig_pair_iter : embedded_mesh_solid_pairs_)
-    couplig_pair_iter->set_current_element_position(*discret_, displacement_vector);
 }
 
 void Constraints::EmbeddedMesh::SolidToSolidNitscheManager::set_global_maps()
@@ -344,23 +275,6 @@ void Constraints::EmbeddedMesh::SolidToSolidNitscheManager::
 }
 
 
-bool Constraints::EmbeddedMesh::SolidToSolidNitscheManager::is_cut_node(
-    Core::Nodes::Node const& node)
-{
-  bool is_cut_node = false;
-
-  // Check if the node belongs to an element that is cut
-  for (int num_ele = 0; num_ele < node.num_element(); num_ele++)
-  {
-    bool is_node_in_cut_ele =
-        std::find(cut_elements_col_vector_.begin(), cut_elements_col_vector_.end(),
-            node.adjacent_elements()[num_ele].user_element()) != cut_elements_col_vector_.end();
-    if (is_node_in_cut_ele) is_cut_node = true;
-  }
-
-  return is_cut_node;
-}
-
 bool Constraints::EmbeddedMesh::SolidToSolidNitscheManager::is_parent_node(
     Core::Nodes::Node const& node)
 {
@@ -370,10 +284,18 @@ bool Constraints::EmbeddedMesh::SolidToSolidNitscheManager::is_parent_node(
          parent_node_ids_.end();
 }
 
-MPI_Comm Constraints::EmbeddedMesh::SolidToSolidNitscheManager::get_my_comm()
+void Constraints::EmbeddedMesh::SolidToSolidNitscheManager::write_output(
+    double time, int timestep_number)
 {
-  return discret_->get_comm();
-}
+  // Clear the data of visualization manager
+  visualization_manager_->clear_data();
 
+  // Collect output of the physical positions of gauss points
+  // where surface integrations will take place
+  collect_output_integration_points();
+
+  // Write output
+  visualization_manager_->write_to_disk(time, timestep_number);
+}
 
 FOUR_C_NAMESPACE_CLOSE

@@ -38,12 +38,11 @@ Constraints::EmbeddedMesh::SolidToSolidCouplingManager::SolidToSolidCouplingMana
       cutwizard, discret_, embedded_mesh_coupling_params_);
 
   // Obtain the information of the background and its related interface elements
-  std::vector<BackgroundInterfaceInfo> info_background_interface_elements =
-      get_information_background_and_interface_elements(
-          *cutwizard, *discret_, ids_cut_elements_col_, cut_elements_col_vector_);
+  info_background_interface_elements_ = get_information_background_and_interface_elements(
+      *cutwizard, *discret_, ids_cut_elements_col_, cut_elements_col_vector_);
 
   // Get the coupling pairs and cut elements
-  get_coupling_pairs_and_background_elements(info_background_interface_elements, cutwizard,
+  get_coupling_pairs_and_background_elements(info_background_interface_elements_, cutwizard,
       embedded_mesh_coupling_params_, *discret_, embedded_mesh_solid_pairs_);
 
   // Change integration rule of elements if they are cut

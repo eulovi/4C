@@ -80,9 +80,9 @@ namespace Constraints::EmbeddedMesh
         Core::LinAlg::SparseMatrix& global_penalty_boundarylayer,
         Core::LinAlg::SparseMatrix& global_penalty_background,
         Core::LinAlg::SparseMatrix& global_penalty_boundarylayer_background,
-        Core::LinAlg::SparseMatrix& global_nitsche_interface,
+        Core::LinAlg::SparseMatrix& global_nitsche_parent,
         Core::LinAlg::SparseMatrix& global_nitsche_background,
-        Core::LinAlg::SparseMatrix& global_nitsche_interface_background,
+        Core::LinAlg::SparseMatrix& global_nitsche_parent_background,
         Core::LinAlg::FEVector<double>& global_penalty_constraint,
         Core::LinAlg::FEVector<double>& global_nitsche_constraint,
         double& nitsche_average_weight_param) override

@@ -11,26 +11,28 @@
 #include "4C_config.hpp"
 
 #include "4C_constraint_framework_embeddedmesh_params.hpp"
+#include "4C_constraint_framework_embeddedmesh_solid_to_solid_coupling_manager.hpp"
 #include "4C_fem_discretization.hpp"
 #include "4C_linalg_fevector.hpp"
 #include "4C_utils_exceptions.hpp"
 
 #include <memory>
 
+FOUR_C_NAMESPACE_OPEN
+
 // Forward declarations.
 class Map;
-
-FOUR_C_NAMESPACE_OPEN
 
 namespace Core::LinAlg
 {
   class SparseMatrix;
-  class FE_Vector;
-}  // namespace Core::LinAlg
+}
+
 namespace Core::IO
 {
   class VisualizationManager;
 }
+
 namespace Solid
 {
   namespace TimeInt
@@ -48,7 +50,7 @@ namespace Constraints::EmbeddedMesh
 {
   class SolidInteractionPair;
 
-  class SolidToSolidNitscheManager
+  class SolidToSolidNitscheManager : public SolidToSolidCouplingManager
   {
    public:
     /**
@@ -56,6 +58,8 @@ namespace Constraints::EmbeddedMesh
      *
      * @param discret (in) Pointer to the discretization.
      * @param displacement_vector (in) global displacement vector.
+     * @param embedded_mesh_coupling_params (in) embedded mesh coupling parameters
+     * @param visualization_manager (in) visualization manager
      */
     SolidToSolidNitscheManager(std::shared_ptr<Core::FE::Discretization>& discret,
         const Core::LinAlg::Vector<double>& displacement_vector,
@@ -63,11 +67,10 @@ namespace Constraints::EmbeddedMesh
         std::shared_ptr<Core::IO::VisualizationManager> visualization_manager);
 
     /**
-     * \brief This method builds the global maps for the global node / element IDs to the Lagrange
-     * multiplier DOFs.
+     * \brief This method builds the global maps for the global node
      * @param displacement_vector (in) global displacement vector.
      */
-    void setup(const Core::LinAlg::Vector<double>& displacement_vector);
+    void setup(const Core::LinAlg::Vector<double>& displacement_vector) override;
 
     /**
      * \brief Evaluate Nitsche coupling contributions on all pairs and assemble them into the
@@ -75,19 +78,14 @@ namespace Constraints::EmbeddedMesh
      * @param displacement_vector (in) global displacement vector.
      */
     void evaluate_global_coupling_contributions(
-        const Core::LinAlg::Vector<double>& displacement_vector);
+        const Core::LinAlg::Vector<double>& displacement_vector) override;
 
     /**
      *
      */
-    void add_global_force_stiffness_contributions(Solid::TimeInt::BaseDataGlobalState& displacement,
+    void add_global_force_stiffness_contributions(Solid::TimeInt::BaseDataGlobalState& data_state,
         std::shared_ptr<Core::LinAlg::SparseMatrix> stiff,
-        std::shared_ptr<Core::LinAlg::Vector<double>> force) const;
-
-    /**
-     * \brief Sets the current position of the elements of the embedded mesh coupling pairs
-     */
-    void set_state(const Core::LinAlg::Vector<double>& displacement_vector);
+        std::shared_ptr<Core::LinAlg::Vector<double>> force) const override;
 
     /**
      * \brief Scale contributions from the Nitsche method with the penalty parameter and weighting
@@ -96,15 +94,23 @@ namespace Constraints::EmbeddedMesh
     void scale_penalty_contributions() const;
 
     /**
-     * \brief Get the communicator associated to the Nitsche manager
+     * \brief Write output obtained in the embedded mesh
      */
-    MPI_Comm get_my_comm();
+    void write_output(double time, int timestep_number) override;
+
+    /**
+     * \brief Obtain the energy contribution of the embedded mesh method
+     */
+    double get_energy() const override
+    {
+      FOUR_C_THROW("get_energy() not implemented for the Nitsche strategy");
+    }
 
    protected:
     /**
      * \brief Throw an error if setup was not called on the object prior to this function call.
      */
-    inline void check_setup() const
+    inline void check_setup() const override
     {
       if (!is_setup_) FOUR_C_THROW("Setup not called on SolidToSolidNitscheManager!");
     }
@@ -112,16 +118,11 @@ namespace Constraints::EmbeddedMesh
     /**
      * \brief Throw an error if the global maps were not build.
      */
-    inline void check_global_maps() const
+    inline void check_global_maps() const override
     {
       if (!is_global_maps_build_)
         FOUR_C_THROW("Global maps are not build in SolidToSolidNitscheManager!");
     }
-
-    /**
-     * \brief Check if this node is in a cut element
-     */
-    bool is_cut_node(Core::Nodes::Node const& node);
 
     /**
      * \brief Check if this node is in a parent element
@@ -133,25 +134,7 @@ namespace Constraints::EmbeddedMesh
      * \brief Calculate the maps for the solid interface and background dofs. The calculated
      * maps are used to complete the Nitsche matrices.
      */
-    void set_global_maps();
-
-    //! Pointer to the discretization containing the solid and interface elements.
-    std::shared_ptr<Core::FE::Discretization> discret_;
-
-    //! Flag if setup was called.
-    bool is_setup_ = false;
-
-    //! Flag if global maps were build.
-    bool is_global_maps_build_;
-
-    //! Embedded mesh parameters.
-    Constraints::EmbeddedMesh::EmbeddedMeshParams embedded_mesh_coupling_params_;
-
-    //! Vector to background row elements that are cut
-    std::vector<Core::Elements::Element*> cut_elements_col_vector_;
-
-    //! Id of background column elements that are cut
-    std::vector<int> ids_cut_elements_col_;
+    void set_global_maps() override;
 
     std::vector<int> parent_node_ids_;
 
@@ -160,9 +143,6 @@ namespace Constraints::EmbeddedMesh
 
     //! Row map of the solid parent element of the interface DOFs.
     std::shared_ptr<Core::LinAlg::Map> parent_dof_rowmap_;
-
-    //! Row map of the solid background DOFs.
-    std::shared_ptr<Core::LinAlg::Map> background_dof_rowmap_;
 
     //! Row map of both interface and solid background DOFs.
     std::shared_ptr<Core::LinAlg::Map> interface_and_background_dof_rowmap_;
@@ -193,12 +173,6 @@ namespace Constraints::EmbeddedMesh
 
     //! Global Nitsche constraint vector.
     std::shared_ptr<Core::LinAlg::FEVector<double>> global_nitsche_constraint_ = nullptr;
-
-    //! Vector with all contact pairs to be evaluated by this Nitsche manager.
-    std::vector<std::shared_ptr<Constraints::EmbeddedMesh::SolidInteractionPair>>
-        embedded_mesh_solid_pairs_;
-
-    std::shared_ptr<Core::IO::VisualizationManager> visualization_manager_;
   };
 
 }  // namespace Constraints::EmbeddedMesh

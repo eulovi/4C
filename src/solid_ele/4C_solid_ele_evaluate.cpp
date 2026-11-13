@@ -324,12 +324,12 @@ template <unsigned dim>
 double Discret::Elements::Solid<dim>::get_normal_cauchy_stress_at_xi(
     const std::vector<double>& disp, const Core::LinAlg::Tensor<double, 3>& xi,
     const Core::LinAlg::Tensor<double, 3>& n, const Core::LinAlg::Tensor<double, 3>& dir,
-    CauchyNDirLinearizations<3>& linearizations)
+    CauchyNDirLinearizations<3>& linearizations, const Core::FE::Discretization* discretization)
 {
   FOUR_C_ASSERT(solid_calc_variant_.has_value(),
       "The solid calculation interface is not initialized for element id {}.", id());
-  return Discret::Elements::get_normal_cauchy_stress_at_xi(
-        *solid_calc_variant_, *this, *solid_material(), disp, xi, n, dir, linearizations);
+  return Discret::Elements::get_normal_cauchy_stress_at_xi(*solid_calc_variant_, *this,
+      *solid_material(), disp, xi, n, dir, linearizations, discretization);
 }
 
 template int Discret::Elements::Solid<2>::evaluate(Teuchos::ParameterList& params,
@@ -346,7 +346,7 @@ template int Discret::Elements::Solid<2>::evaluate_neumann(Teuchos::ParameterLis
 template double Discret::Elements::Solid<2>::get_normal_cauchy_stress_at_xi(
     const std::vector<double>& disp, const Core::LinAlg::Tensor<double, 3>& xi,
     const Core::LinAlg::Tensor<double, 3>& n, const Core::LinAlg::Tensor<double, 3>& dir,
-    CauchyNDirLinearizations<3>& linearizations);
+    CauchyNDirLinearizations<3>& linearizations, const Core::FE::Discretization* discretization);
 
 template int Discret::Elements::Solid<3>::evaluate(Teuchos::ParameterList& params,
     Core::FE::Discretization& discretization, std::vector<int>& lm,
@@ -362,38 +362,6 @@ template int Discret::Elements::Solid<3>::evaluate_neumann(Teuchos::ParameterLis
 template double Discret::Elements::Solid<3>::get_normal_cauchy_stress_at_xi(
     const std::vector<double>& disp, const Core::LinAlg::Tensor<double, 3>& xi,
     const Core::LinAlg::Tensor<double, 3>& n, const Core::LinAlg::Tensor<double, 3>& dir,
-    CauchyNDirLinearizations<3>& linearizations);
-
-template int Discret::Elements::Solid<2>::evaluate(Teuchos::ParameterList& params,
-    Core::FE::Discretization& discretization, std::vector<int>& lm,
-    Core::LinAlg::SerialDenseMatrix& elemat1, Core::LinAlg::SerialDenseMatrix& elemat2,
-    Core::LinAlg::SerialDenseVector& elevec1, Core::LinAlg::SerialDenseVector& elevec2,
-    Core::LinAlg::SerialDenseVector& elevec3);
-template void Discret::Elements::Solid<2>::set_integration_rule(
-    const Core::FE::GaussIntegration& integration_rule);
-template int Discret::Elements::Solid<2>::evaluate_neumann(Teuchos::ParameterList& params,
-    Core::FE::Discretization& discretization, const Core::Conditions::Condition& condition,
-    std::vector<int>& lm, Core::LinAlg::SerialDenseVector& elevec1,
-    Core::LinAlg::SerialDenseMatrix* elemat1);
-template double Discret::Elements::Solid<2>::get_normal_cauchy_stress_at_xi(
-    const std::vector<double>& disp, const Core::LinAlg::Tensor<double, 3>& xi,
-    const Core::LinAlg::Tensor<double, 3>& n, const Core::LinAlg::Tensor<double, 3>& dir,
-    CauchyNDirLinearizations<3>& linearizations);
-
-template int Discret::Elements::Solid<3>::evaluate(Teuchos::ParameterList& params,
-    Core::FE::Discretization& discretization, std::vector<int>& lm,
-    Core::LinAlg::SerialDenseMatrix& elemat1, Core::LinAlg::SerialDenseMatrix& elemat2,
-    Core::LinAlg::SerialDenseVector& elevec1, Core::LinAlg::SerialDenseVector& elevec2,
-    Core::LinAlg::SerialDenseVector& elevec3);
-template void Discret::Elements::Solid<3>::set_integration_rule(
-    const Core::FE::GaussIntegration& integration_rule);
-template int Discret::Elements::Solid<3>::evaluate_neumann(Teuchos::ParameterList& params,
-    Core::FE::Discretization& discretization, const Core::Conditions::Condition& condition,
-    std::vector<int>& lm, Core::LinAlg::SerialDenseVector& elevec1,
-    Core::LinAlg::SerialDenseMatrix* elemat1);
-template double Discret::Elements::Solid<3>::get_normal_cauchy_stress_at_xi(
-    const std::vector<double>& disp, const Core::LinAlg::Tensor<double, 3>& xi,
-    const Core::LinAlg::Tensor<double, 3>& n, const Core::LinAlg::Tensor<double, 3>& dir,
-    CauchyNDirLinearizations<3>& linearizations);
+    CauchyNDirLinearizations<3>& linearizations, const Core::FE::Discretization* discretization);
 
 FOUR_C_NAMESPACE_CLOSE
