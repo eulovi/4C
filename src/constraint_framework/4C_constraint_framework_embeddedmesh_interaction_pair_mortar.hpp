@@ -48,13 +48,25 @@ namespace Constraints::EmbeddedMesh
         Core::IO::VisualizationData& background_integration_points_visualization_data,
         Core::IO::VisualizationData& interface_integration_points_visualization_data) override;
 
-    void get_pair_visualization(
-        Core::IO::VisualizationData& lagrange_multipliers_visualization_data,
-        std::shared_ptr<Core::LinAlg::Vector<double>> lambda,
-        const Constraints::EmbeddedMesh::SolidToSolidMortarManager* mortar_manager,
+    void get_pair_visualization(Core::IO::VisualizationData& visualization_data,
+        std::shared_ptr<Core::LinAlg::Vector<double>> vector_to_visualize,
+        const Constraints::EmbeddedMesh::SolidToSolidCouplingManager* coupling_manager,
         std::shared_ptr<std::unordered_set<int>> interface_tracker) override;
 
     //! @name Evaluation methods
+    /**
+     * \brief Evaluate the global matrices and vectors resulting from the coupling method.
+     * @param discret (in) Discretization, used to get the boundary layer GIDs.
+     * @param coupling_manager (in) Manager for the specific type of coupling technique
+     * @param global_matrices (in) A map of sparse matrices resulting from the coupling method.
+     * @param global_vectors (in) A map of FEVectors resulting from the coupling method.
+     */
+    void evaluate_and_assemble_coupling_contributions(const Core::FE::Discretization& discret,
+        const Constraints::EmbeddedMesh::SolidToSolidCouplingManager* coupling_manager,
+        std::map<std::string, std::shared_ptr<Core::LinAlg::SparseMatrix>>& global_matrices,
+        std::map<std::string, std::shared_ptr<Core::LinAlg::FEVector<double>>>& global_vectors)
+        override;
+
     /**
      * \brief Evaluate the global matrices and vectors resulting from mortar coupling.
      * @param discret (in) Discretization, used to get the interface GIDs.
@@ -73,22 +85,7 @@ namespace Constraints::EmbeddedMesh
         Core::LinAlg::SparseMatrix& global_fbl_l, Core::LinAlg::SparseMatrix& global_fbg_l,
         Core::LinAlg::FEVector<double>& global_constraint,
         Core::LinAlg::FEVector<double>& global_kappa,
-        Core::LinAlg::FEVector<double>& global_lambda_active) override;
-
-    void evaluate_and_assemble_nitsche_contributions(const Core::FE::Discretization& discret,
-        const Constraints::EmbeddedMesh::SolidToSolidNitscheManager* nitsche_manager,
-        Core::LinAlg::SparseMatrix& global_penalty_boundarylayer,
-        Core::LinAlg::SparseMatrix& global_penalty_background,
-        Core::LinAlg::SparseMatrix& global_penalty_boundarylayer_background,
-        Core::LinAlg::SparseMatrix& global_nitsche_parent,
-        Core::LinAlg::SparseMatrix& global_nitsche_background,
-        Core::LinAlg::SparseMatrix& global_nitsche_parent_background,
-        Core::LinAlg::FEVector<double>& global_penalty_constraint,
-        Core::LinAlg::FEVector<double>& global_nitsche_constraint,
-        double& nitsche_average_weight_param) override
-    {
-      FOUR_C_THROW("The evaluation of Nitsche contributions cannot be called from a mortar pair.");
-    }
+        Core::LinAlg::FEVector<double>& global_lambda_active);
 
     /**
      * \brief Set the Gauss rule over the interface for element1_ and element2_.

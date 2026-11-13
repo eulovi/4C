@@ -45,6 +45,8 @@ namespace Constraints::EmbeddedMesh
   class SolidToSolidMortarManager;
   class SolidToSolidNitscheManager;
 
+  class SolidToSolidCouplingManager;
+
   class SolidInteractionPair
   {
    public:
@@ -95,51 +97,27 @@ namespace Constraints::EmbeddedMesh
         Core::IO::VisualizationData& interface_integration_points_visualization_data) = 0;
 
     /*!
-    \brief Get the Lagrange multiplier field evaluated on the interface nodes for visualization.
-    */
-    virtual void get_pair_visualization(
-        Core::IO::VisualizationData& lagrange_multipliers_visualization_data,
-        std::shared_ptr<Core::LinAlg::Vector<double>> lambda,
-        const Constraints::EmbeddedMesh::SolidToSolidMortarManager* mortar_manager,
+\brief Get special visualization for a pair.
+*/
+    virtual void get_pair_visualization(Core::IO::VisualizationData& visualization_data,
+        std::shared_ptr<Core::LinAlg::Vector<double>> vector_to_visualize,
+        const Constraints::EmbeddedMesh::SolidToSolidCouplingManager* coupling_manager,
         std::shared_ptr<std::unordered_set<int>> interface_tracker) = 0;
 
 
     //! @name Evaluation methods
     /**
-     * \brief Evaluate the global matrices and vectors resulting from mortar coupling.
+     * \brief Evaluate the global matrices and vectors resulting from the coupling method.
      * @param discret (in) Discretization, used to get the boundary layer GIDs.
-     * @param mortar_manager (in) Mortar manager, used to get the Lagrange multiplier GIDs.
-     * @param global_g_bl_ (in/out) Constraint equations derived w.r.t the boundary layer DOFs.
-     * @param global_g_bg_ (in/out) Constraint equations derived w.r.t the background mesh DOFs.
-     * @param global_fbl_l_ (in/out) Boundary layer force vector derived w.r.t the Lagrange
-     * multipliers.
-     * @param global_fbg_l_ (in/out) Background mesh force vector derived w.r.t the Lagrange
-     * multipliers.
-     * @param global_constraint (in/out) Global constraint vector.
-     * @param global_kappa (in/out) Global scaling matrix.
-     * @param global_lambda_active (in/out) Global vector with active Lagrange multipliers.
-     * @param displacement_vector (in) Global displacement vector.
+     * @param coupling_manager (in) Manager for the specific type of coupling technique
+     * @param global_matrices (in) A map of sparse matrices resulting from the coupling method.
+     * @param global_vectors (in) A map of FEVectors resulting from the coupling method.
      */
-    virtual void evaluate_and_assemble_mortar_contributions(const Core::FE::Discretization& discret,
-        const Constraints::EmbeddedMesh::SolidToSolidMortarManager* mortar_manager,
-        Core::LinAlg::SparseMatrix& global_g_bl_, Core::LinAlg::SparseMatrix& global_g_bg_,
-        Core::LinAlg::SparseMatrix& global_fbl_l_, Core::LinAlg::SparseMatrix& global_fbg_l_,
-        Core::LinAlg::FEVector<double>& global_constraint,
-        Core::LinAlg::FEVector<double>& global_kappa,
-        Core::LinAlg::FEVector<double>& global_lambda_active) = 0;
-
-    virtual void evaluate_and_assemble_nitsche_contributions(
+    virtual void evaluate_and_assemble_coupling_contributions(
         const Core::FE::Discretization& discret,
-        const Constraints::EmbeddedMesh::SolidToSolidNitscheManager* nitsche_manager,
-        Core::LinAlg::SparseMatrix& global_penalty_interface,
-        Core::LinAlg::SparseMatrix& global_penalty_background,
-        Core::LinAlg::SparseMatrix& global_penalty_interface_background,
-        Core::LinAlg::SparseMatrix& global_nitsche_parent,
-        Core::LinAlg::SparseMatrix& global_nitsche_background,
-        Core::LinAlg::SparseMatrix& global_nitsche_parent_background,
-        Core::LinAlg::FEVector<double>& global_penalty_constraint,
-        Core::LinAlg::FEVector<double>& global_nitsche_constraint,
-        double& nitsche_average_weight_param) = 0;
+        const Constraints::EmbeddedMesh::SolidToSolidCouplingManager* coupling_manager,
+        std::map<std::string, std::shared_ptr<Core::LinAlg::SparseMatrix>>& global_matrices,
+        std::map<std::string, std::shared_ptr<Core::LinAlg::FEVector<double>>>& global_vectors) = 0;
 
     /**
      * \brief Set the current element displacement.

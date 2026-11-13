@@ -16,6 +16,7 @@
 #include "4C_linalg_fevector.hpp"
 #include "4C_utils_exceptions.hpp"
 
+#include <array>
 #include <memory>
 
 FOUR_C_NAMESPACE_OPEN

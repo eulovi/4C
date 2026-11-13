@@ -208,6 +208,32 @@ void Constraints::EmbeddedMesh::SurfaceToBackgroundCouplingPairNitsche<Interface
 
 template <typename Interface, typename ParentInterface, typename Background>
 void Constraints::EmbeddedMesh::SurfaceToBackgroundCouplingPairNitsche<Interface, ParentInterface,
+    Background>::evaluate_and_assemble_coupling_contributions(const Core::FE::Discretization&
+                                                                  discret,
+    const Constraints::EmbeddedMesh::SolidToSolidCouplingManager* coupling_manager,
+    std::map<std::string, std::shared_ptr<Core::LinAlg::SparseMatrix>>& global_matrices,
+    std::map<std::string, std::shared_ptr<Core::LinAlg::FEVector<double>>>& global_vectors)
+{
+  const auto* nitsche_manager =
+      dynamic_cast<const Constraints::EmbeddedMesh::SolidToSolidNitscheManager*>(coupling_manager);
+  if (nitsche_manager == nullptr)
+  {
+    FOUR_C_THROW("This coupling manager is not a SolidToSolidNitscheManager.");
+  }
+
+  evaluate_and_assemble_nitsche_contributions(discret, nitsche_manager,
+      *global_matrices.at("global_penalty_interface"),
+      *global_matrices.at("global_penalty_background"),
+      *global_matrices.at("global_penalty_interface_background"),
+      *global_matrices.at("global_nitsche_parent"),
+      *global_matrices.at("global_nitsche_background"),
+      *global_matrices.at("global_nitsche_parent_background"),
+      *global_vectors.at("global_penalty_constraint"),
+      *global_vectors.at("global_nitsche_constraint"), params_.nitsche_average_weight_param_);
+}
+
+template <typename Interface, typename ParentInterface, typename Background>
+void Constraints::EmbeddedMesh::SurfaceToBackgroundCouplingPairNitsche<Interface, ParentInterface,
     Background>::evaluate_and_assemble_nitsche_contributions(const Core::FE::Discretization&
                                                                  discret,
     const Constraints::EmbeddedMesh::SolidToSolidNitscheManager* nitsche_manager,

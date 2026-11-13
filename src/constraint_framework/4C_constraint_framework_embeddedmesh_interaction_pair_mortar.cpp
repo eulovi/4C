@@ -79,17 +79,19 @@ Constraints::EmbeddedMesh::SurfaceToBackgroundCouplingPairMortar<Interface, Back
 
 template <typename Interface, typename Background, typename Mortar>
 void Constraints::EmbeddedMesh::SurfaceToBackgroundCouplingPairMortar<Interface, Background,
-    Mortar>::get_pair_visualization(Core::IO::VisualizationData&
-                                        lagrange_multipliers_visualization_data,
-    std::shared_ptr<Core::LinAlg::Vector<double>> lambda,
-    const Constraints::EmbeddedMesh::SolidToSolidMortarManager* mortar_manager,
+    Mortar>::get_pair_visualization(Core::IO::VisualizationData& visualization_data,
+    std::shared_ptr<Core::LinAlg::Vector<double>> vector_to_visualize,
+    const Constraints::EmbeddedMesh::SolidToSolidCouplingManager* coupling_manager,
     std::shared_ptr<std::unordered_set<int>> interface_tracker)
 {
+  // Cast coupling manager to mortar manager
+  const auto* mortar_manager =
+      dynamic_cast<const Constraints::EmbeddedMesh::SolidToSolidMortarManager*>(coupling_manager);
+  if (mortar_manager == nullptr) FOUR_C_THROW("This manager is not a SolidToSolidMortarManager.");
+
   // Get the visualization vectors.
-  std::vector<double>& point_coordinates =
-      lagrange_multipliers_visualization_data.get_point_coordinates();
-  std::vector<double>& lambda_vis =
-      lagrange_multipliers_visualization_data.get_point_data<double>("lambda");
+  std::vector<double>& point_coordinates = visualization_data.get_point_coordinates();
+  std::vector<double>& lambda_vis = visualization_data.get_point_data<double>("lambda");
 
   // Setup variables.
   Core::LinAlg::Matrix<Mortar::n_dof_, 1, double> q_lambda;
@@ -98,7 +100,7 @@ void Constraints::EmbeddedMesh::SurfaceToBackgroundCouplingPairMortar<Interface,
   // Get the lambda GIDs of this pair.
   std::vector<int> lambda_row;
   get_mortar_gid(mortar_manager, this, Mortar::n_dof_, &lambda_row);
-  std::vector<double> lambda_pair = Core::FE::extract_values(*lambda, lambda_row);
+  std::vector<double> lambda_pair = Core::FE::extract_values(*vector_to_visualize, lambda_row);
   for (unsigned int i_dof = 0; i_dof < Mortar::n_dof_; i_dof++)
     q_lambda(i_dof) = lambda_pair[i_dof];
 
@@ -246,6 +248,27 @@ void Constraints::EmbeddedMesh::SurfaceToBackgroundCouplingPairMortar<Interface,
     }
     current_numpoints += gps_boundarycell->num_points();
   }
+}
+
+template <typename Interface, typename Background, typename Mortar>
+void Constraints::EmbeddedMesh::SurfaceToBackgroundCouplingPairMortar<Interface, Background,
+    Mortar>::evaluate_and_assemble_coupling_contributions(const Core::FE::Discretization& discret,
+    const Constraints::EmbeddedMesh::SolidToSolidCouplingManager* coupling_manager,
+    std::map<std::string, std::shared_ptr<Core::LinAlg::SparseMatrix>>& global_matrices,
+    std::map<std::string, std::shared_ptr<Core::LinAlg::FEVector<double>>>& global_vectors)
+{
+  const auto* mortar_manager =
+      dynamic_cast<const Constraints::EmbeddedMesh::SolidToSolidMortarManager*>(coupling_manager);
+  if (mortar_manager == nullptr)
+  {
+    FOUR_C_THROW("This coupling manager is not a SolidToSolidMortarManager.");
+  }
+
+  evaluate_and_assemble_mortar_contributions(discret, mortar_manager,
+      *global_matrices.at("global_g_bl_"), *global_matrices.at("global_g_bg_"),
+      *global_matrices.at("global_fbl_l_"), *global_matrices.at("global_fbg_l_"),
+      *global_vectors.at("global_constraint_"), *global_vectors.at("global_kappa_"),
+      *global_vectors.at("global_active_lambda_"));
 }
 
 template <typename Interface, typename Background, typename Mortar>

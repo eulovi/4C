@@ -190,13 +190,24 @@ void Constraints::EmbeddedMesh::SolidToSolidNitscheManager::evaluate_global_coup
   global_penalty_constraint_->put_scalar(0.);
   global_nitsche_constraint_->put_scalar(0.);
 
+  std::map<std::string, std::shared_ptr<Core::LinAlg::SparseMatrix>> global_matrices = {
+      {"global_penalty_interface", global_penalty_interface_},
+      {"global_penalty_background", global_penalty_background_},
+      {"global_penalty_interface_background", global_penalty_interface_background_},
+      {"global_nitsche_parent", global_nitsche_parent_},
+      {"global_nitsche_background", global_nitsche_background_},
+      {"global_nitsche_parent_background", global_nitsche_parent_background_},
+  };
+
+  std::map<std::string, std::shared_ptr<Core::LinAlg::FEVector<double>>> global_vectors = {
+      {"global_penalty_constraint", global_penalty_constraint_},
+      {"global_nitsche_constraint", global_nitsche_constraint_},
+  };
+
   for (auto& elepairptr : embedded_mesh_solid_pairs_)
   {
-    elepairptr->evaluate_and_assemble_nitsche_contributions(*discret_, this,
-        *global_penalty_interface_, *global_penalty_background_,
-        *global_penalty_interface_background_, *global_nitsche_parent_, *global_nitsche_background_,
-        *global_nitsche_parent_background_, *global_penalty_constraint_,
-        *global_nitsche_constraint_, embedded_mesh_coupling_params_.nitsche_average_weight_param_);
+    elepairptr->evaluate_and_assemble_coupling_contributions(
+        *discret_, this, global_matrices, global_vectors);
   }
 
   // Complete the global matrices.
