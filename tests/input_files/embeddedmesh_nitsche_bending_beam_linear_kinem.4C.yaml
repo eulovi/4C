@@ -1,7 +1,6 @@
 TITLE:
-  ? "Pure bending. The equivalent moment applied at both ends is M = 0.01667, this is acchieved by adding
+  - "Pure bending. The equivalent moment applied at both ends is M = 0.01667, this is acchieved by adding
     a varying linear force of p = 0.2*y. "
-  : {}
 PROBLEM TYPE:
   PROBLEMTYPE: "Structure"
   SHAPEFCT: "Nurbs"
